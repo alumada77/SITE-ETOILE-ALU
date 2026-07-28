@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@media print {
+
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+
+  body {
+    background: white !important;
+  }
+
+
+  .invoice-copy-wrapper {
+    display: flex;
+    width: 100%;
+  }
+
+
+  .invoice-copy {
+    width: 50%;
+    padding: 8mm;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+
+  .invoice-label {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+
+
+  .print\:overflow-visible {
+    overflow: visible !important;
+  }
+
+
+  button {
+    display: none !important;
+  }
+
+}
