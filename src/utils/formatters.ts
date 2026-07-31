@@ -78,18 +78,18 @@ const drawInvoice = (
 
   // Header background
   doc.setFillColor(30, 41, 59); // Slate-800
-  doc.rect(0, 0, 210, 35, 'F');
+  doc.rect(offsetX, 0, 148.5, 35, "F");
 
   // Title & Company Name
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
-  doc.text(settings.companyName.toUpperCase(), 14, 18);
+  doc.text(settings.companyName.toUpperCase(), offsetX + 14, 18);
 
   doc.setFontSize(10);
   doc.text(`${settings.tagline || 'Fabrication Aluminium, Fer, Inox & Vitrerie'}`, 14, 26);
 
   doc.setFontSize(16);
-  doc.text(`FACTURE N° ${invoice.invoiceNumber}`, 130, 20);
+  doc.text(`FACTURE N° ${invoice.invoiceNumber}`, offsetX + 95, 20);
 
   // Reset text color
   doc.setTextColor(30, 41, 59);
@@ -97,25 +97,25 @@ const drawInvoice = (
   // Company details
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Tél: ${settings.phone}`, 14, 43);
-  doc.text(`Email: ${settings.email}`, 14, 48);
-  doc.text(`Adresse: ${settings.address}`, 14, 53);
-  if (settings.nif) doc.text(`NIF: ${settings.nif} | STAT: ${settings.stat}`, 14, 58);
+  doc.text(`Tél: ${settings.phone}`, offsetX + 14, 43);
+  doc.text(`Email: ${settings.email}`, offsetX + 14, 48);
+  doc.text(`Adresse: ${settings.address}`, offsetX + 14, 53);
+  if (settings.nif) doc.text(`NIF: ${settings.nif} | STAT: ${settings.stat}`, offsetX + 14, 58);
 
   // Customer box
   doc.setFillColor(241, 245, 249);
-  doc.roundedRect(120, 38, 76, 25, 2, 2, 'F');
+  doc.roundedRect(offsetX + 120, 38, 76, 25, 2, 2, "F");
   doc.setFont('helvetica', 'bold');
-  doc.text('CLIENT:', 124, 44);
+  doc.text('CLIENT:', offsetX + 124, 44);
   doc.setFont('helvetica', 'normal');
-  doc.text(invoice.customerName, 124, 50);
-  doc.text(`Tél: ${invoice.customerPhone}`, 124, 55);
-  if (invoice.customerAddress) doc.text(`Adresse: ${invoice.customerAddress}`, 124, 60);
+  doc.text(invoice.customerName, offsetX + 124, 50);
+  doc.text(`Tél: ${invoice.customerPhone}`, offsetX + 124, 55);
+  if (invoice.customerAddress) doc.text(`Adresse: ${invoice.customerAddress}`, offsetX + 124, 60);
 
   // Dates
   doc.setFontSize(9);
-  doc.text(`Date d'émission: ${formatDate(invoice.date)}`, 14, 68);
-  doc.text(`Date d'échéance: ${formatDate(invoice.dueDate)}`, 120, 68);
+  doc.text(`Date d'émission: ${formatDate(invoice.date)}`, offsetX + 14, 68);
+  doc.text(`Date d'échéance: ${formatDate(invoice.dueDate)}`,offsetX + 72, 68);
 
   // Table items
   const tableData = invoice.products.map((item, index) => [
@@ -136,13 +136,84 @@ const drawInvoice = (
 
   autoTable(doc, {
     startY: 73,
-    head: [['#', 'Désignation', 'Unité', 'Qté', 'Prix Unitaire', 'Total']],
+
+    margin: {
+      left: offsetX + 5,
+      right: 5,
+    },
+
+    tableWidth: 138,
+
+    head: [[
+      "#",
+      "Désignation",
+      "Unité",
+      "Qté",
+      "P.U.",
+      "Total"
+    ]],
+
     body: tableData,
-    headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-    styles: { fontSize: 8, cellPadding: 3 },
+
+    headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: [255, 255, 255],
+      fontSize: 8,
+      halign: "center",
+      valign: "middle",
+      cellPadding: 2,
+    },
+
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: "linebreak",
+      valign: "middle",
+    },
+
+    columnStyles: {
+      // #
+      0: {
+        cellWidth: 8,
+        halign: "center",
+      },
+
+      // Désignation
+      1: {
+        cellWidth: 58,
+      },
+
+      // Unité
+      2: {
+        cellWidth: 15,
+        halign: "center",
+      },
+
+      // Qté
+      3: {
+        cellWidth: 12,
+        halign: "center",
+      },
+
+      // Prix Unitaire
+      4: {
+        cellWidth: 22,
+        halign: "right",
+      },
+
+      // Total
+      5: {
+        cellWidth: 23,
+        halign: "right",
+      },
+    },
   });
 
+  
   // Totals Breakdown
   const finalY = (doc as any).lastAutoTable.finalY || 150;
   
@@ -188,7 +259,7 @@ const drawInvoice = (
 
   // Payment Status Stamp
   doc.setFillColor(invoice.paymentStatus === 'Payé' ? 34 : 234, invoice.paymentStatus === 'Payé' ? 197 : 179, invoice.paymentStatus === 'Payé' ? 94 : 8);
-  doc.roundedRect(14, finalY + 10, 45, 12, 1, 1, 'F');
+  doc.roundedRect(offsetX + 72, 38, 65, 25, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { ref, onValue, set, push, update, remove } from 'firebase/database';
+import { ref, onValue, set, push, update, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { 
   Product, 
@@ -47,6 +47,12 @@ interface DataContextType {
   addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt'>) => Promise<string>;
   updateOrder: (id: string, order: Partial<Order>) => Promise<void>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
+  updateOrderItemFabrication: (
+    orderId: string,
+    itemIndex: number,
+    fabricationStatus: string,
+    fabricationProgress: number
+  ) => Promise<void>;
   deleteOrder: (id: string) => Promise<void>;
 
   // Quotes
@@ -140,6 +146,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isSubscribed = false;
     };
   }, []);
+
+  //mis a jour fabrication
+  const updateOrderItemFabrication = async (
+    orderId:string,
+    itemIndex:number,
+    fabricationStatus:string,
+    fabricationProgress:number
+  )=>{
+
+  const orderRef = ref(
+    database,
+    `orders/${orderId}`
+  );
+  const snapshot = await get(orderRef);
+
+  if(snapshot.exists()){
+    const order = snapshot.val();
+    order.products[itemIndex].fabricationStatus =
+        fabricationStatus;
+
+    order.products[itemIndex].fabricationProgress =
+        fabricationProgress;
+
+    await update(orderRef,{
+      products: order.products
+    });
+    }
+  };
 
   // Products CRUD
   const addProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
@@ -508,6 +542,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addOrder,
         updateOrder,
         updateOrderStatus,
+        updateOrderItemFabrication,
         deleteOrder,
         addQuote,
         updateQuote,
@@ -539,4 +574,23 @@ export const useData = () => {
     throw new Error('useData must be used within DataProvider');
   }
   return context;
+};
+
+
+export const generateTrackingNumber = () => {
+  const now = new Date();
+
+  const yy = now.getFullYear().toString().slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let code = "";
+
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  return `SUV-${yy}${mm}${dd}-${code}`;
 };

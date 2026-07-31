@@ -1,356 +1,1437 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import {
-  Wrench,
-  ArrowLeft,
-  MessageCircle,
-  Cpu,
-  Cog,
-  Hammer,
+  Search,
+  Truck,
+  Headphones,
+  Award,
+  Package,
+  ShieldCheck,
+  Clock3,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Phone,
 } from "lucide-react";
 
-import { Link } from "react-router-dom";
-import logo1 from "../../img/logo1.png";
+import { useData } from "../../contexts/DataContext";
+import { Order } from "@/types";
 
-interface Props {
-  mode?: "client" | "tracking";
+interface TrackingForm {
+  orderNumber: string;
+  trackingNumber: string;
+  phone: string;
 }
 
-const EspaceConstruction: React.FC<Props> = ({
-    mode = "client",
-        }) => {
 
-    const config =
-        mode === "client"
-        ? {
-            title: "SUIVI COMMANDE",
-            subtitle:
-                "Cette fonctionnalité est actuellement en cours de développement.",
-            description:
-                "Nos ingénieurs travaillent activement afin de vous proposer un espace client moderne, sécurisé et simple d'utilisation.",
-            progress: 10,
-            }
-        : {
-            title: "SUIVI DE COMMANDE",
-            subtitle:
-                "Le système intelligent de suivi est en cours de développement.",
-            description:
-                "Vous pourrez bientôt suivre vos commandes en temps réel, consulter leur avancement et recevoir les notifications automatiquement.",
-            progress: 10,
-            };
+interface TrackingResult {
+  id: string;
+  orderNumber: string;
+  trackingNumber?: string;
+  customerName: string;
+  customerPhone: string;
+  products: any[];
+  totalAmount: number;
+  advancePayment: number;
+  remainingAmount: number;
+  status: string;
+  createdAt?: string;
+  estimatedDelivery?: string;
+}
 
-    const [progress, setProgress] = useState(0);
+const OrderTracking = () => {
+  const { orders } = useData();
+  const [form, setForm] = useState<TrackingForm>({
+    orderNumber: "",
+    trackingNumber: "",
+    phone: "",
+  });
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setProgress((old) => {
-                if (old >= config.progress) return config.progress;
-                return old + 1;
-            });
-        }, 20);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [searched, setSearched] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
-        return () => clearInterval(timer);
+  const [order, setOrder] = useState<TrackingResult | null>(null);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
 
-    }, [config.progress]);
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
+  };
+
+const searchOrder = async (): Promise<TrackingResult | null> => {
+
+  const orderNumber = form.orderNumber
+    .trim()
+    .toLowerCase();
+
+  const trackingNumber = form.trackingNumber
+    .trim()
+    .toLowerCase();
+
+
+  if (!orderNumber || !trackingNumber) {
+    setError(
+      "Veuillez saisir le numéro de commande et le numéro de suivi."
+    );
+    return null;
+  }
+
+
+
+  const foundOrder = orders.find((o) => {
+
+    const dbOrderNumber =
+      o.orderNumber
+        ?.trim()
+        .toLowerCase();
+
+
+    const dbTrackingNumber =
+      o.trackingNumber
+        ?.trim()
+        .toLowerCase();
+
+
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
-
-            {/* Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(245,158,11,.15),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,.10),transparent_40%)]" />
-
-            <div className="absolute top-20 left-10 w-80 h-80 rounded-full bg-amber-500/10 blur-[120px]" />
-
-            <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-blue-500/10 blur-[150px]" />
-
-            <div className="relative z-10 flex items-center justify-center min-h-screen px-5 py-10">
-
-                <div className="w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/10 bg-slate-900/75 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,.5)]">
-
-                    <div className="grid lg:grid-cols-2">
-
-                                {/* LEFT */}
-                                <div className="p-8 lg:p-10 flex flex-col justify-center">
-
-                                <div className="flex items-center gap-5">
-
-                                    {/* Logo animé */}
-                                    <div className="relative">
-
-                                    <div className="absolute inset-0 rounded-full bg-amber-500/20 blur-xl animate-pulse" />
-
-                                    {/* cercle tournant */}
-                                    <div
-                                        className="absolute -inset-4 animate-spin"
-                                        style={{ animationDuration: "8s" }}
-                                    >
-                                        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_15px_#fbbf24]" />
-
-                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_15px_#fde047]" />
-
-                                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_15px_#fb923c]" />
-
-                                        <span className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_15px_#f59e0b]" />
-                                    </div>
-
-                                    <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 overflow-hidden">
-
-                                        <img
-                                        src={logo1}
-                                        alt="logo"
-                                        className="w-16 h-16 object-contain"
-                                        />
-
-                                    </div>
-
-                                    </div>
-
-                                    <div>
-
-                                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black uppercase tracking-widest">
-                                        <Hammer className="w-4 h-4" />
-                                        Développement
-                                    </span>
-
-                                    <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight">
-                                        {config.title}
-                                    </h1>
-
-                                    <p className="mt-3 text-slate-400 text-base">
-                                        ÉTOILE ALU ERP
-                                    </p>
-
-                                    </div>
-
-                                </div>
-
-                                <div className="mt-10 space-y-6">
-
-                                    <h2 className="text-2xl md:text-4xl font-black leading-tight">
-                                    Cette fonctionnalité
-                                    <span className="text-amber-400">
-                                        {" "}
-                                        arrive bientôt.
-                                    </span>
-                                    </h2>
-
-                                    <p className="text-slate-300 leading-8 text-base">
-                                    {config.subtitle}
-                                    </p>
-
-                                    <p className="text-slate-400 leading-7">
-                                    {config.description}
-                                    </p>
-
-                                </div>
-
-                                {/* Progress */}
-                                <div className="mt-10">
-
-                                    <div className="flex justify-between mb-3 text-sm">
-
-                                    <span className="font-bold text-slate-300">
-                                        Progression
-                                    </span>
-
-                                    <span className="font-black text-amber-400">
-                                        {progress}%
-                                    </span>
-
-                                    </div>
-
-                                    <div className="w-full h-4 rounded-full bg-slate-800 overflow-hidden">
-
-                                    <div
-                                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-500"
-                                        style={{
-                                        width: `${progress}%`,
-                                        }}
-                                    />
-
-                                    </div>
-
-                                </div>
-
-                                {/* Infos */}
-                                <div className="mt-10 grid grid-cols-2 gap-4">
-
-                                    <div className="rounded-2xl bg-slate-800/70 border border-white/10 p-5">
-
-                                    <Cog
-                                        className="w-7 h-7 text-amber-400 animate-spin"
-                                        style={{
-                                        animationDuration: "6s",
-                                        }}
-                                    />
-
-                                    <p className="mt-3 font-bold">
-                                        Développement actif
-                                    </p>
-
-                                    <p className="text-sm text-slate-400 mt-2">
-                                        Nos développeurs travaillent quotidiennement sur cette nouvelle fonctionnalité.
-                                    </p>
-
-                                    </div>
-
-                                    <div className="rounded-2xl bg-slate-800/70 border border-white/10 p-5">
-
-                                    <Cpu className="w-7 h-7 text-sky-400" />
-
-                                    <p className="mt-3 font-bold">
-                                        Estimation
-                                    </p>
-
-                                    <p className="text-sm text-slate-400 mt-2">
-                                        Disponible très prochainement après les derniers tests.
-                                    </p>
-
-                                    </div>
-
-                                </div>
-                                </div>
-
-                                {/* RIGHT */}
-                                <div className="relative flex items-center justify-center p-8 lg:p-10">
-
-                                {/* Glow */}
-                                <div className="absolute w-96 h-96 rounded-full bg-amber-500/10 blur-[140px]" />
-
-                                    <div className="relative w-full max-w-md">
-
-                                        <div className="rounded-[30px] border border-white/10 bg-slate-900/80 backdrop-blur-2xl p-8 shadow-2xl">
-
-                                        {/* Animation */}
-                                        <div className="relative flex justify-center mb-8">
-
-                                            {/* Cercle extérieur */}
-                                            <div
-                                            className="absolute w-44 h-44 rounded-full border border-amber-500/20 animate-spin"
-                                            style={{ animationDuration: "15s" }}
-                                            />
-
-                                            {/* Cercle intérieur */}
-                                            <div
-                                            className="absolute w-32 h-32 rounded-full border border-blue-500/20 animate-spin"
-                                            style={{
-                                                animationDuration: "10s",
-                                                animationDirection: "reverse",
-                                            }}
-                                            />
-
-                                        {/* Technicien */}
-                                        <div className="relative z-10 w-36 h-36 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-2xl">
-
-                                        <span className="text-7xl animate-bounce">
-                                            👨‍💻
-                                        </span>
-                                        </div>
-
-                                        {/* Roue dentée */}
-                                        <Cog
-                                            className="absolute -right-2 top-4 w-10 h-10 text-amber-400 animate-spin"
-                                            style={{ animationDuration: "5s" }}
-                                        />
-
-                                        <Cog
-                                            className="absolute left-0 bottom-5 w-7 h-7 text-blue-400 animate-spin"
-                                            style={{
-                                                animationDuration: "3s",
-                                                animationDirection: "reverse",
-                                            }}
-                                        />
-
-                                        </div> {/* Fermeture Animation */}
-
-                                        <h3 className="text-center text-2xl font-black">
-                                            Développement en cours
-                                        </h3>
-                                        <p className="mt-5 text-center text-slate-400 leading-8">
-                                        Notre équipe technique travaille actuellement sur cette
-                                        nouvelle fonctionnalité afin d'offrir une expérience plus
-                                        moderne, plus rapide et plus sécurisée.
-                                        </p>
-
-                                        {/* Etat */}
-                                        <div className="mt-8 space-y-4">
-
-                                            <div className="flex items-center justify-between rounded-2xl bg-slate-800/70 border border-white/10 px-5 py-4">
-
-                                                <span className="text-slate-300">
-                                                    État du développement
-                                                </span>
-
-                                                <span className="font-black text-amber-400">
-                                                    {progress}%
-                                                </span>
-
-                                            </div>
-
-
-                                            <div className="flex items-center justify-between rounded-2xl bg-slate-800/70 border border-white/10 px-5 py-4">
-
-                                                <span className="text-slate-300">
-                                                    Livraison estimée
-                                                </span>
-
-                                                <span className="font-bold text-green-400">
-                                                    Très bientôt
-                                                </span>
-
-                                            </div>
-
-                                        </div>
-
-
-                                        {/* Boutons */}
-                                        <div className="mt-10 grid grid-cols-2 gap-4">
-
-                                            <Link
-                                                to="/"
-                                                className="flex items-center justify-center gap-2 rounded-2xl bg-slate-800 hover:bg-slate-700 py-4 font-bold transition-all"
-                                            >
-                                                <ArrowLeft className="w-5 h-5" />
-                                                Retour
-                                            </Link>
-
-
-                                            <a
-                                                href="https://wa.me/261330000000"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-4 font-black transition-all"
-                                            >
-                                                <MessageCircle className="w-5 h-5" />
-                                                WhatsApp
-                                            </a>
-
-                                        </div>
-
-
-                                    </div> {/* fermeture card rounded-[30px] */}
-
-                                    </div> {/* fermeture max-w-md */}
-
-                                    </div> {/* fermeture RIGHT */}
-
-                    </div> {/* fermeture grid lg:grid-cols-2 */}
-
-                            {/* Footer */}
-                            <div className="border-t border-white/10 py-5 px-8 text-center">
-                                <p className="text-xs text-slate-500">
-                                © {new Date().getFullYear()} ÉTOILE ALU ERP • Fonctionnalité en cours de développement.
-                                </p>
-                            </div>
-
-                            
-
-                        
-                </div> {/* fermeture max-w-5xl */}
-
-            </div> {/* fermeture relative z-10 */}
-        </div>
-
+      dbOrderNumber === orderNumber &&
+      dbTrackingNumber === trackingNumber
     );
+
+  });
+
+
+
+  if (!foundOrder) {
+
+    setError(
+      "Le numéro de commande ou le numéro de suivi est incorrect."
+    );
+
+    return null;
+
+  }
+
+
+
+  return {
+
+    id: foundOrder.id,
+
+    orderNumber:
+      foundOrder.orderNumber,
+
+
+    trackingNumber:
+      foundOrder.trackingNumber,
+
+
+    customerName:
+      foundOrder.customerName,
+
+
+    customerPhone:
+      foundOrder.customerPhone,
+
+
+    products:
+      foundOrder.products,
+
+
+    totalAmount:
+      foundOrder.totalAmount,
+
+
+    advancePayment:
+      foundOrder.advancePayment,
+
+
+    remainingAmount:
+      foundOrder.remainingAmount,
+
+
+    status:
+      foundOrder.status,
+
+
+    createdAt:
+      foundOrder.createdAt,
+
+
+    estimatedDelivery:
+      foundOrder.estimatedDelivery,
+
+  };
+
 };
 
-export default EspaceConstruction;
+const handleSearch = async (
+    e: React.FormEvent<HTMLFormElement>
+    ) => {
+
+    e.preventDefault();
+
+
+    // Reset
+    setError("");
+    setOrder(null);
+    setShowResult(false);
+
+
+
+    // Vérification champs obligatoires
+    if (
+        !form.orderNumber.trim() ||
+        !form.trackingNumber.trim()
+    ) {
+
+        setError(
+        "Veuillez renseigner le numéro de commande et le numéro de suivi."
+        );
+
+        return;
+    }
+
+
+
+    setLoading(true);
+
+
+
+    try {
+
+        const result = await searchOrder();
+
+
+
+        if (result) {
+
+
+        // Stockage résultat
+        setOrder(result);
+
+
+        // Affichage interface résultat
+        setTimeout(() => {
+
+            setShowResult(true);
+
+        }, 300);
+
+
+
+        setSearched(true);
+
+
+
+        } else {
+
+
+        setOrder(null);
+
+        setShowResult(false);
+
+
+        setError(
+            "Aucune commande ne correspond aux informations saisies."
+        );
+
+
+        setSearched(false);
+
+        }
+
+
+
+    } catch (error) {
+
+
+        console.error(
+        "Erreur recherche commande:",
+        error
+        );
+
+
+        setOrder(null);
+
+        setShowResult(false);
+
+
+        setError(
+        "Une erreur est survenue lors de la recherche."
+        );
+
+
+        setSearched(false);
+
+
+
+    } finally {
+
+
+        setLoading(false);
+
+
+    }
+
+};
+
+const getStatusProgress = (
+    status:string
+  )=>{
+
+    switch(status){
+      case "Nouveau":
+        return 10;
+      case "Devis":
+        return 20;
+      case "En fabrication":
+        return 60;
+      case "En cours":
+        return 75;
+      case "Terminé":
+        return 90;
+      case "Livré":
+        return 100;
+      default:
+        return 0;
+    }
+  };
+
+
+  return (
+    <div className="
+      min-h-screen
+      bg-gradient-to-br
+      from-slate-950
+      via-slate-900
+      to-amber-950
+      p-4
+      md:p-10
+    ">
+
+      {/* Partie 2/4 manomboka eto */}
+      {/* =============================== HERO SECTION ================================ */}
+
+        <motion.div
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+        className="max-w-3xl mx-auto"
+        >
+
+
+        {/* Animated Header */}
+
+        <div className="text-center mb-10">
+
+
+
+            <motion.div
+            animate={{
+                rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+                duration: 4,
+                repeat: Infinity,
+            }}
+            className="
+                inline-flex
+                items-center
+                justify-center
+                w-20
+                h-20
+                rounded-3xl
+                bg-amber-500/20
+                border
+                border-amber-400/30
+                mb-6
+            "
+            >
+
+            <Package
+                className="
+                w-10
+                h-10
+                text-amber-400
+                "
+            />
+
+            </motion.div>
+
+
+
+            <h1
+            className="
+                text-3xl
+                md:text-5xl
+                font-black
+                text-white
+                uppercase
+                tracking-tight
+            "
+            >
+
+            Suivi de votre commande
+
+            </h1>
+
+
+
+            <p
+            className="
+                mt-4
+                text-sm
+                md:text-base
+                text-slate-400
+                max-w-xl
+                mx-auto
+            "
+            >
+
+            Suivez en temps réel l'avancement
+            de votre ouvrage aluminium,
+            de la fabrication jusqu'à la livraison.
+
+            </p>
+        </div>
+
+
+        {/* SEARCH CARD */}
+        <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: .5 }}
+            className="
+                mt-10
+                w-full
+                max-w-3xl
+                mx-auto
+                rounded-[30px]
+                border
+                border-white/10
+                bg-white/5
+                backdrop-blur-2xl
+                shadow-[0_20px_80px_rgba(0,0,0,.35)]
+                overflow-hidden
+            "
+            >
+
+            {/* HEADER */}
+            <div className="relative overflow-hidden">
+
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-transparent to-orange-500/20" />
+
+                <div className="relative px-8 py-7">
+
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+
+                    <ShieldCheck className="w-4 h-4 text-amber-400"/>
+
+                    <span className="text-[10px] uppercase tracking-widest font-black text-amber-300">
+                    Suivi sécurisé
+                    </span>
+
+                </div>
+
+                <h2 className="mt-5 text-3xl font-black text-white">
+                    Suivre votre commande
+                </h2>
+
+                <p className="mt-2 text-sm text-slate-300 leading-relaxed max-w-xl">
+                    Entrez votre numéro de commande ainsi que votre numéro de suivi
+                    afin de consulter en temps réel l'état d'avancement de votre fabrication.
+                </p>
+
+                </div>
+
+            </div>
+
+            {/* FORM */}
+            <form
+                onSubmit={handleSearch}
+                className="px-8 pb-8 space-y-6"
+            >
+
+                <div className="grid md:grid-cols-2 gap-5">
+
+                {/* COMMANDE */}
+
+                <div>
+
+                    <label className="block mb-2 text-[11px] font-black uppercase tracking-wider text-slate-300">
+                    Numéro de commande
+                    </label>
+
+                    <div
+                    className="
+                        group
+                        flex
+                        items-center
+                        rounded-2xl
+                        border
+                        border-slate-700
+                        bg-slate-900/70
+                        px-4
+                        transition
+                        focus-within:border-amber-400
+                        focus-within:ring-2
+                        focus-within:ring-amber-500/20
+                    "
+                    >
+
+                    <Package className="w-5 h-5 text-amber-400"/>
+
+                    <input
+                        name="orderNumber"
+                        value={form.orderNumber}
+                        onChange={handleChange}
+                        placeholder="CMD-260730-AB45XZ"
+                        className="
+                        w-full
+                        bg-transparent
+                        px-4
+                        py-4
+                        text-sm
+                        text-white
+                        placeholder:text-slate-500
+                        outline-none
+                        "
+                    />
+
+                    </div>
+
+                </div>
+
+                {/* TRACKING */}
+
+                <div>
+
+                    <label className="block mb-2 text-[11px] font-black uppercase tracking-wider text-slate-300">
+                    Numéro de suivi
+                    </label>
+
+                    <div
+                    className="
+                        flex
+                        items-center
+                        rounded-2xl
+                        border
+                        border-slate-700
+                        bg-slate-900/70
+                        px-4
+                        transition
+                        focus-within:border-emerald-400
+                        focus-within:ring-2
+                        focus-within:ring-emerald-500/20
+                    "
+                    >
+
+                    <ShieldCheck className="w-5 h-5 text-emerald-400"/>
+
+                    <input
+                        name="trackingNumber"
+                        value={form.trackingNumber}
+                        onChange={handleChange}
+                        placeholder="TRK-X5H29Q"
+                        className="
+                        w-full
+                        bg-transparent
+                        px-4
+                        py-4
+                        text-sm
+                        text-white
+                        placeholder:text-slate-500
+                        outline-none
+                        "
+                    />
+
+                    </div>
+
+                </div>
+
+                </div>
+
+                {/* BOUTON */}
+
+                <motion.button
+
+                whileHover={{
+                    scale:1.02,
+                    y:-2
+                }}
+
+                whileTap={{
+                    scale:.98
+                }}
+
+                disabled={
+                    loading ||
+                    !form.orderNumber.trim() ||
+                    !form.trackingNumber.trim()
+                }
+
+                type="submit"
+
+                className="
+                    relative
+                    overflow-hidden
+                    w-full
+                    rounded-2xl
+                    py-4
+                    font-black
+                    uppercase
+                    tracking-widest
+                    text-sm
+                    bg-gradient-to-r
+                    from-amber-400
+                    via-orange-400
+                    to-orange-600
+                    text-slate-950
+                    shadow-xl
+                    shadow-orange-500/20
+                "
+
+                >
+
+                <span className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-100 transition"/>
+
+                <span className="relative flex items-center justify-center gap-3">
+
+                    {
+
+                    loading ?
+
+                    <>
+
+                        <Loader2 className="w-5 h-5 animate-spin"/>
+
+                        Recherche en cours...
+
+                    </>
+
+                    :
+
+                    <>
+
+                        <Search className="w-5 h-5"/>
+
+                        Voir l'avancement de ma commande
+
+                    </>
+
+                    }
+
+                </span>
+
+                </motion.button>
+
+                {/* MESSAGE */}
+
+                {error && (
+
+                <motion.div
+
+                    initial={{opacity:0,y:10}}
+                    animate={{opacity:1,y:0}}
+
+                    className="
+                    rounded-2xl
+                    border
+                    border-red-500/20
+                    bg-red-500/10
+                    px-4
+                    py-4
+                    flex
+                    items-center
+                    gap-3
+                    "
+
+                >
+
+                    <AlertCircle className="w-5 h-5 text-red-400"/>
+
+                    <span className="text-sm text-red-200 font-medium">
+
+                    {error}
+
+                    </span>
+
+                </motion.div>
+
+                )}
+
+            </form>
+            </motion.div>
+        </motion.div>
+
+        {/* ===============================
+            ORDER RESULT
+        ================================ */}
+
+        {
+        showResult && order && (
+
+        <motion.div
+
+        initial={{
+        opacity:0,
+        y:40,
+        scale:0.96
+        }}
+
+        animate={{
+        opacity:1,
+        y:0,
+        scale:1
+        }}
+
+        transition={{
+        duration:.5
+        }}
+
+        className="
+        mt-8
+        w-full
+        max-w-3xl
+        mx-auto
+        bg-white/10
+        backdrop-blur-xl
+        border
+        border-white/10
+        rounded-3xl
+        p-5
+        shadow-2xl
+        "
+
+        >
+
+
+        {/* HEADER */}
+
+        <div
+        className="
+        flex
+        flex-col
+        md:flex-row
+        md:justify-between
+        md:items-center
+        gap-4
+        mb-6
+        "
+        >
+
+
+        <div>
+
+        <p className="
+        text-[10px]
+        uppercase
+        font-black
+        text-slate-400
+        ">
+        Commande trouvée
+        </p>
+
+
+        <h2 className="
+        text-xl
+        font-black
+        text-white
+        ">
+        {order.orderNumber}
+        </h2>
+
+
+
+        {
+        order.trackingNumber && (
+
+        <p className="
+        mt-1
+        text-xs
+        font-bold
+        text-amber-400
+        ">
+        Suivi : {order.trackingNumber}
+        </p>
+
+        )
+
+        }
+
+
+        </div>
+
+
+
+
+
+        <div className="
+        px-4
+        py-3
+        rounded-2xl
+        bg-amber-500/10
+        border
+        border-amber-500/30
+        ">
+
+
+        <p className="
+        text-[10px]
+        uppercase
+        font-bold
+        text-slate-400
+        ">
+        Statut général
+        </p>
+
+
+        <p className="
+        text-sm
+        font-black
+        text-amber-400
+        ">
+        {order.status}
+        </p>
+
+
+        </div>
+
+
+        </div>
+
+
+
+
+
+        {/* CLIENT */}
+
+        <div className="
+        grid
+        grid-cols-1
+        md:grid-cols-3
+        gap-3
+        mb-8
+        ">
+
+
+        <div className="
+        bg-slate-900/50
+        rounded-2xl
+        p-4
+        ">
+
+        <p className="
+        text-[10px]
+        uppercase
+        text-slate-400
+        ">
+        Client
+        </p>
+
+
+        <p className="
+        text-sm
+        font-black
+        text-white
+        ">
+        {order.customerName}
+        </p>
+
+        </div>
+
+
+
+
+
+        <div className="
+        bg-slate-900/50
+        rounded-2xl
+        p-4
+        ">
+
+        <p className="
+        text-[10px]
+        uppercase
+        text-slate-400
+        ">
+        Avance
+        </p>
+
+
+        <p className="
+        text-sm
+        font-black
+        text-emerald-400
+        ">
+        {(order.advancePayment || 0)
+        .toLocaleString("fr-FR")} Ar
+        </p>
+
+
+        </div>
+
+
+
+
+
+        <div className="
+        bg-slate-900/50
+        rounded-2xl
+        p-4
+        ">
+
+        <p className="
+        text-[10px]
+        uppercase
+        text-slate-400
+        ">
+        Reste
+        </p>
+
+
+        <p className="
+        text-sm
+        font-black
+        text-rose-400
+        ">
+        {(order.remainingAmount || 0)
+        .toLocaleString("fr-FR")} Ar
+        </p>
+
+
+        </div>
+
+
+        </div>
+
+
+
+
+
+
+
+        {/* PRODUITS */}
+
+        <h3 className="
+        text-xs
+        uppercase
+        font-black
+        text-amber-400
+        mb-4
+        ">
+        Ouvrages commandés
+        </h3>
+
+
+
+        <div className="
+        space-y-4
+        ">
+
+
+        {
+        order.products?.map(
+        (item:any,index:number)=>{
+
+
+        const progress =
+        item.fabricationProgress ??
+        getStatusProgress(order.status);
+
+
+        const fabricationStatus =
+        item.fabricationStatus ??
+        order.status;
+
+
+
+        return (
+
+
+        <motion.div
+
+        key={index}
+
+        whileHover={{
+        scale:1.01
+        }}
+
+        className="
+        bg-slate-900/60
+        rounded-2xl
+        border
+        border-slate-700
+        p-5
+        "
+
+        >
+
+
+        {/* PRODUIT */}
+
+        <div className="
+        flex
+        justify-between
+        gap-3
+        ">
+
+
+        <div>
+
+        <h4 className="
+        text-sm
+        font-black
+        text-white
+        ">
+        {item.productName}
+        </h4>
+
+
+        <p className="
+        text-xs
+        text-slate-400
+        mt-1
+        ">
+        Quantité :
+        {" "}
+        {item.quantity}
+        {" "}
+        {item.unit}
+        </p>
+
+
+        </div>
+
+
+
+        <p className="
+        text-sm
+        font-black
+        text-amber-400
+        ">
+        {(item.totalPrice || 0)
+        .toLocaleString("fr-FR")} Ar
+        </p>
+
+
+        </div>
+
+
+
+
+
+
+
+        {/* OPTIONS */}
+
+        {
+        item.selectedOptions?.length > 0 && (
+
+        <div className="
+        mt-4
+        p-3
+        rounded-xl
+        bg-amber-500/10
+        border
+        border-amber-500/20
+        ">
+
+
+        <p className="
+        text-[10px]
+        uppercase
+        font-black
+        text-amber-400
+        mb-2
+        ">
+        Options
+        </p>
+
+
+
+        {
+        item.selectedOptions.map(
+        (option:any)=>(
+
+
+        <p
+        key={option.id}
+        className="
+        text-xs
+        text-slate-200
+        "
+        >
+        • {option.name}
+        {" "}
+        (+{(option.price || 0)
+        .toLocaleString("fr-FR")} Ar)
+        </p>
+
+
+        )
+
+        )
+
+        }
+
+
+        </div>
+
+        )
+
+        }
+
+
+
+
+
+
+
+        {/* FABRICATION */}
+
+        <div className="
+        mt-5
+        ">
+
+
+        <div className="
+        flex
+        justify-between
+        mb-2
+        ">
+
+
+        <span className="
+        text-[10px]
+        uppercase
+        font-black
+        text-slate-400
+        ">
+        Fabrication
+        </span>
+
+
+        <span className="
+        text-xs
+        font-black
+        text-amber-400
+        ">
+        {progress}%
+        </span>
+
+
+        </div>
+
+
+
+
+        <div className="
+        h-3
+        rounded-full
+        bg-slate-700
+        overflow-hidden
+        ">
+
+
+        <motion.div
+
+        initial={{
+        width:0
+        }}
+
+        animate={{
+        width:`${progress}%`
+        }}
+
+        transition={{
+        duration:1
+        }}
+
+        className="
+        h-full
+        bg-gradient-to-r
+        from-amber-400
+        to-orange-500
+        "
+
+        />
+
+
+        </div>
+
+
+
+
+        <p className="
+        mt-2
+        text-xs
+        font-bold
+        text-slate-300
+        ">
+
+        Statut :
+
+        <span className="
+        text-amber-400
+        ml-1
+        ">
+        {fabricationStatus}
+        </span>
+
+
+        </p>
+
+
+        </div>
+
+
+
+
+
+        </motion.div>
+
+
+        )
+
+        }
+
+        )
+
+        }
+
+
+        </div>
+
+
+
+
+
+
+        {/* RESET */}
+
+        <button
+
+        onClick={()=>{
+
+        setOrder(null);
+        setShowResult(false);
+        setSearched(false);
+
+        }}
+
+        className="
+        mt-6
+        px-5
+        py-2
+        rounded-xl
+        bg-slate-800
+        text-white
+        text-xs
+        font-black
+        hover:bg-slate-700
+        transition
+        "
+
+        >
+        Nouvelle recherche
+        </button>
+
+
+
+        </motion.div>
+
+        )
+
+        }
+
+        {/* =============================== LIVRAISON + SUPPORT + FOOTER ============================== */}
+
+        <div className="mt-10 w-full max-w-3xl mx-auto">
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Livraison */}
+            <motion.div
+            whileHover={{ y: -4 }}
+            className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            border
+            border-emerald-500/20
+            bg-gradient-to-br
+            from-emerald-500/10
+            to-emerald-700/5
+            backdrop-blur-xl
+            p-6
+            shadow-xl
+            "
+            >
+
+            <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-emerald-400/10 blur-3xl" />
+
+            <div className="relative">
+
+                <div className="flex items-center gap-3">
+
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                    <Truck className="w-6 h-6 text-emerald-400" />
+                </div>
+
+                <div>
+
+                    <p className="text-[11px] uppercase tracking-widest font-black text-emerald-300">
+                    Livraison prévue
+                    </p>
+
+                    <p className="mt-1 text-xl font-black text-white">
+                    {order?.estimatedDelivery
+                        ? new Date(order.estimatedDelivery).toLocaleDateString("fr-FR")
+                        : "Date en préparation"}
+                    </p>
+
+                </div>
+
+                </div>
+
+                <div className="mt-5 inline-flex px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[10px] uppercase font-black text-emerald-300">
+                Livraison sécurisée
+                </div>
+
+            </div>
+
+            </motion.div>
+
+            {/* Support */}
+            <motion.div
+            whileHover={{ y: -4 }}
+            className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            border
+            border-sky-500/20
+            bg-gradient-to-br
+            from-sky-500/10
+            to-slate-900/20
+            backdrop-blur-xl
+            p-6
+            shadow-xl
+            "
+            >
+
+            <div className="absolute top-0 right-0 w-28 h-28 rounded-full bg-sky-400/10 blur-3xl" />
+
+            <div className="relative">
+
+                <div className="flex items-center gap-3">
+
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 flex items-center justify-center">
+                    <Headphones className="w-6 h-6 text-sky-400" />
+                </div>
+
+                <div>
+
+                    <p className="text-[11px] uppercase tracking-widest font-black text-sky-300">
+                    Support Client
+                    </p>
+
+                    <p className="mt-1 text-white font-semibold">
+                    Notre équipe reste disponible.
+                    </p>
+
+                </div>
+
+                </div>
+
+                <a
+                href={`https://wa.me/${order?.customerPhone ?? ""}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                mt-6
+                inline-flex
+                items-center
+                gap-2
+                rounded-2xl
+                px-5
+                py-3
+                bg-green-500
+                hover:bg-green-400
+                transition-all
+                text-white
+                font-black
+                text-sm
+                shadow-lg
+                "
+                >
+
+                <Phone className="w-5 h-5"/>
+
+                Contacter sur WhatsApp
+
+                </a>
+
+            </div>
+
+            </motion.div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 rounded-3xl border border-slate-700 bg-slate-900/60 backdrop-blur-xl p-8 text-center">
+
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl">
+
+            <ShieldCheck className="w-10 h-10 text-slate-950"/>
+
+            </div>
+
+            <h3 className="mt-5 text-xl font-black text-white">
+            Merci pour votre confiance
+            </h3>
+
+            <p className="mt-3 text-slate-400 leading-7 max-w-2xl mx-auto">
+            Votre commande est suivie en temps réel par notre atelier.
+            Nous mettons tout en œuvre afin de vous garantir une fabrication
+            de qualité, un respect des délais et une finition professionnelle.
+            </p>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+
+            <div className="px-5 py-3 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-black uppercase flex items-center gap-2">
+                <Award className="w-4 h-4"/>
+                Qualité Premium
+            </div>
+
+            <div className="px-5 py-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-black uppercase flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4"/>
+                Garantie 1 an
+            </div>
+
+            <div className="px-5 py-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-black uppercase flex items-center gap-2">
+                <Clock3 className="w-4 h-4"/>
+                Suivi en temps réel
+            </div>
+
+            </div>
+
+        </div>
+
+        </div>
+
+    </div>
+  );
+};
+
+
+export default OrderTracking;

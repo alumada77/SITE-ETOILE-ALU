@@ -313,7 +313,7 @@ export const Home: React.FC = () => {
             <div className="aspect-4/3 rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800">
 
               <img 
-                src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1000&q=80"
+                src="https://images.pexels.com/photos/323775/pexels-photo-323775.jpeg"
                 alt="Atelier Aluminium Étoile Alu"
                 className="w-full h-full object-cover"
               />
@@ -342,7 +342,7 @@ export const Home: React.FC = () => {
       <section className="py-20 bg-slate-100 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <div className="text-center max-w-screen-2xl mx-auto mb-16 space-y-3">
 
             <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">
               NOS SPÉCIALITÉS

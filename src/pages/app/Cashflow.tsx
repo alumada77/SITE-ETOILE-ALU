@@ -91,12 +91,22 @@ export const Cashflow: React.FC = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteTargetId) return;
+    if (!deleteTargetId) {
+      console.log("deleteTargetId vide");
+      return;
+    }
+
+    console.log("Suppression :", deleteTargetId);
+
     try {
       await deleteCashflow(deleteTargetId);
-      setToast({ message: 'Mouvement supprimé', type: 'success' });
+      setToast({ message: "Mouvement supprimé", type: "success" });
     } catch (err: any) {
-      setToast({ message: err.message || 'Erreur de suppression', type: 'error' });
+      console.error(err);
+      setToast({
+        message: err.message || "Erreur de suppression",
+        type: "error",
+      });
     } finally {
       setDeleteTargetId(null);
     }

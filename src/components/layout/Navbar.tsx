@@ -189,7 +189,7 @@ export const Navbar: React.FC = () => {
               {/* Espace Client */}
               <Link
                 to="/client"
-                className="relative hidden xl:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md"
+                className="relative hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <User className="w-4 h-4" />
                 Espace Client
@@ -202,7 +202,7 @@ export const Navbar: React.FC = () => {
               {/* Suivi Commande */}
               <Link
                 to="/suivi"
-                className="relative hidden xl:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md"
+                className="relative hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <PackageSearch className="w-4 h-4" />
                 Suivi Commande

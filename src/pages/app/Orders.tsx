@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ShoppingCart, 
+  ShoppingCart,
+  Eye, 
   Plus, 
   Search, 
   Trash2, 
@@ -14,7 +15,7 @@ import {
   Clock,
   ArrowRight
 } from 'lucide-react';
-import { useData } from '../../contexts/DataContext';
+import { useData, generateTrackingNumber } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Order, OrderItem, OrderStatus } from '../../types';
 import { formatCurrency, formatDate, generateOrderNumber } from '../../utils/formatters';
@@ -22,7 +23,7 @@ import { Toast, ToastType } from '../../components/ui/Toast';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
 export const Orders: React.FC = () => {
-  const { orders, customers, products, addOrder, updateOrder, updateOrderStatus, deleteOrder, addInvoice, settings } = useData();
+  const { orders, customers, products, addOrder, updateOrder, updateOrderStatus,updateOrderItemFabrication, deleteOrder, addInvoice, settings } = useData();
   const { isAdmin, isManager } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +40,7 @@ export const Orders: React.FC = () => {
   const [laborFee, setLaborFee] = useState<number>(0);
   const [transportFee, setTransportFee] = useState<number>(0);
   const [discount, setDiscount] = useState<number>(0);
-  const [taxRate, setTaxRate] = useState<number>(settings.defaultTaxRate || 20);
+  const [taxRate, setTaxRate] = useState<number>(settings.tva? parseFloat(settings.tva) || 0 : 0);
   const [advancePayment, setAdvancePayment] = useState<number>(0);
   const [status, setStatus] = useState<OrderStatus>('Nouveau');
   const [notes, setNotes] = useState('');
@@ -47,6 +48,9 @@ export const Orders: React.FC = () => {
   // Item builder states
   const [selectedProductId, setSelectedProductId] = useState('');
   const [itemQty, setItemQty] = useState<number>(1);
+  const [selectedOptions, setSelectedOptions] = useState<any[]>([]);
+  const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  
 
   const statusesList: OrderStatus[] = [
     'Nouveau',
@@ -58,6 +62,25 @@ export const Orders: React.FC = () => {
     'Annulé'
   ];
 
+  const fabricationSteps = [
+    {
+      label: 'Découpe',
+      progress: 20
+    },
+    {
+      label: 'Assemblage',
+      progress: 50
+    },
+    {
+      label: 'Pose vitrage',
+      progress: 80
+    },
+    {
+      label: 'Terminé',
+      progress: 100
+    }
+  ];
+
   const handleOpenAddModal = () => {
     setEditingOrder(null);
     setSelectedCustomerId(customers[0]?.id || '');
@@ -65,28 +88,51 @@ export const Orders: React.FC = () => {
     setLaborFee(0);
     setTransportFee(0);
     setDiscount(0);
-    setTaxRate(settings.defaultTaxRate || 20);
+    setTaxRate(settings.tva? parseFloat(settings.tva) || 0 : 0);
     setAdvancePayment(0);
     setStatus('Nouveau');
     setNotes('');
     setIsModalOpen(true);
   };
 
+  const selectedProduct = products.find(
+    p => p.id === selectedProductId
+  );
+
   const handleAddItem = () => {
-    const prod = products.find(p => p.id === selectedProductId);
+    const prod = products.find(
+      p => p.id === selectedProductId
+    );
     if (!prod) return;
+    // Total des options sélectionnées
+    const optionsTotal = selectedOptions.reduce(
+      (sum, option) => sum + Number(option.price || 0),
+      0
+    );
+
+    // Prix final produit + options
+    const finalPrice = prod.price + optionsTotal;
 
     const newItem: OrderItem = {
       productId: prod.id,
       productName: prod.name,
-      unit: prod.unit,
-      unitPrice: prod.price,
-      quantity: Number(itemQty),
-      totalPrice: prod.price * Number(itemQty)
+      selectedOptions:selectedOptions,
+      unit:prod.unit,
+      unitPrice:finalPrice,
+      quantity:Number(itemQty),
+      trackingNumber: generateTrackingNumber(),
+      totalPrice:finalPrice * Number(itemQty),
+      fabricationStatus:"Nouveau",
+      fabricationProgress:0
     };
+    setOrderItems(prev => [
+      ...prev,
+      newItem
+    ]);
 
-    setOrderItems(prev => [...prev, newItem]);
+    // Reset formulaire
     setSelectedProductId('');
+    setSelectedOptions([]);
     setItemQty(1);
   };
 
@@ -148,6 +194,7 @@ export const Orders: React.FC = () => {
           subtotal,
           taxAmount,
           totalAmount,
+          trackingNumber: generateTrackingNumber(),
           advancePayment,
           remainingAmount,
           status,
@@ -166,6 +213,7 @@ export const Orders: React.FC = () => {
       const invId = await addInvoice({
         orderId: ord.id,
         customerId: ord.customerId,
+        orderNumber: ord.orderNumber,
         customerName: ord.customerName,
         customerPhone: ord.customerPhone,
         customerAddress: ord.customerAddress,
@@ -179,6 +227,7 @@ export const Orders: React.FC = () => {
         total: ord.totalAmount,
         advance: ord.advancePayment,
         remaining: ord.remainingAmount,
+        trackingNumber: ord.trackingNumber,
         date: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentStatus: ord.remainingAmount === 0 ? 'Payé' : ord.advancePayment > 0 ? 'Partiel' : 'En attente'
@@ -283,6 +332,7 @@ export const Orders: React.FC = () => {
                 <th className="py-4 px-4">Montant Total</th>
                 <th className="py-4 px-4">Avance Perçue</th>
                 <th className="py-4 px-4">Reste</th>
+                <th className="py-4 px-4">Numéro de Suivi</th>
                 <th className="py-4 px-4">Statut</th>
                 <th className="py-4 px-4 text-right">Actions</th>
               </tr>
@@ -305,6 +355,7 @@ export const Orders: React.FC = () => {
                   <td className="py-3 px-4 font-mono font-bold text-rose-600 dark:text-rose-400">
                     {formatCurrency(ord.remainingAmount, settings.currency)}
                   </td>
+                  <td className="py-3 px-4 font-mono font-black text-amber-600 dark:text-amber-400">{ord.trackingNumber}</td>
                   <td className="py-3 px-4">
                     <select
                       value={ord.status}
@@ -316,6 +367,14 @@ export const Orders: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setViewOrder(ord)}
+                        className="p-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                        title="Voir les détails"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
                       <button
                         onClick={() => handleConvertToInvoice(ord)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-950 font-bold text-[11px] shadow-sm hover:scale-105 transition-transform"
@@ -341,10 +400,183 @@ export const Orders: React.FC = () => {
         </div>
       </div>
 
+      {/* View Order Item */}
+      {viewOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+          <div className="w-full max-w-screen-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+              <div>
+                <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest">
+                  DETAIL COMMANDE {viewOrder.orderNumber}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Client : {viewOrder.customerName}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setViewOrder(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5"/>
+              </button>
+
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {viewOrder.products.map((item,index)=>{
+                const progress = item.fabricationProgress ?? 0;
+                const fabricationStatus = 
+                  item.fabricationStatus ?? "En attente";
+                return (
+                <div
+                  key={index}
+                  className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30"
+                >
+
+                  {/* Produit header */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-black text-sm text-slate-900 dark:text-white">
+                        {item.productName}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Quantité : {item.quantity} {item.unit}
+                      </p>
+                    </div>
+                    <span className="font-black text-amber-500">
+                      {formatCurrency(
+                        item.totalPrice,
+                        settings.currency
+                      )}
+                    </span>
+                  </div>
+
+                  {/* OPTIONS PRODUIT */}
+                  {item.selectedOptions &&
+                  item.selectedOptions.length > 0 && (
+                    <div className="mt-4 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                      <p className="text-[10px] uppercase font-black text-slate-400 mb-2">
+                        Options choisies
+                      </p>
+                      <div className="space-y-1">
+                        {item.selectedOptions.map(option=>(
+                          <div
+                            key={option.id}
+                            className="flex justify-between text-xs"
+                          >
+                            <span className="text-amber-500 font-medium">
+                              • {option.name}
+                            </span>
+                            <span className="font-bold text-slate-500">
+                              + {formatCurrency(
+                                option.price,
+                                settings.currency
+                              )}
+
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DESCRIPTION si disponible */}
+                  {item.description && (
+                    <div className="mt-3">
+                      <p className="text-[10px] uppercase font-bold text-slate-400">
+                        Description
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        {item.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* STATUT FABRICATION */}
+                  <div className="mt-5">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] uppercase font-black text-slate-400">
+                        Fabrication
+                      </span>
+                      <span className="text-xs font-black text-amber-500">
+                        {item.fabricationProgress ?? 0}%
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                        style={{
+                          width:`${item.fabricationProgress ?? 0}%`
+                        }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[11px] font-bold text-slate-500">
+                      Statut : {item.fabricationStatus || "En attente"}
+                    </p>
+
+                    {/* Modifier statut fabrication */}
+                    <select
+                      value={item.fabricationStatus || "Découpe"}
+                      onChange={async (e)=>{
+                        const step = fabricationSteps.find(
+                          s => s.label === e.target.value
+                        );
+                        if(step && viewOrder){
+                          await updateOrderItemFabrication(
+                            viewOrder.id,
+                            index,
+                            step.label,
+                            step.progress
+                          );
+
+                          // havaozina eo no ho eo koa ny affichage
+                          setViewOrder(prev => {
+                            if(!prev) return prev;
+                            return {
+                              ...prev,
+                              products: prev.products.map((p,i)=>
+                                i === index
+                                ? {
+                                    ...p,
+                                    fabricationStatus: step.label,
+                                    fabricationProgress: step.progress
+                                  }
+                                : p
+                              )
+                            };
+                          });
+                        }
+                      }}
+                      className="mt-3 w-full px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                    >
+                      {fabricationSteps.map(step => (
+                        <option
+                          key={step.label}
+                          value={step.label}
+                        >
+                          {step.label} ({step.progress}%)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* New Order Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 my-auto overflow-hidden">
+          <div className="w-full max-w-screen-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 my-auto overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
               <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest">
                 NOUVELLE COMMANDE ATELIER
@@ -371,39 +603,119 @@ export const Orders: React.FC = () => {
 
               {/* Add Item Builder */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-3">
+
                 <h4 className="text-xs font-extrabold uppercase text-amber-600 dark:text-amber-400">
                   AJOUTER UN OUVRAGE / PRODUIT
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
+
+                <div className="space-y-4">
+                  {/* Produit */}
+                  <div>
                     <select
                       value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedProductId(e.target.value);
+                        setSelectedOptions([]);
+                      }}
+
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none"
                     >
-                      <option value="">-- Choisir un ouvrage --</option>
+                      <option value="">
+                        -- Choisir un ouvrage --
+                      </option>
+
                       {products.map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.name} ({p.price.toLocaleString('fr-FR')} {settings.currency}/{p.unit})
+                          {p.name} (
+                          {p.price.toLocaleString('fr-FR')} 
+                          {settings.currency}/{p.unit}
+                          )
                         </option>
                       ))}
                     </select>
                   </div>
+
+                  {/* OPTIONS PRODUIT */}
+                  {selectedProduct?.options &&
+                  selectedProduct.options.length > 0 && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                      <p className="text-xs font-bold uppercase mb-3 text-amber-500">
+                        Options disponibles
+                      </p>
+
+                      <div className="space-y-2">
+                        {selectedProduct.options.map(option => {
+                          const checked = selectedOptions.some(
+                            o => o.id === option.id
+                          );
+                          return (
+                            <label
+                              key={option.id}
+                              className="flex items-center justify-between text-xs cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e)=>{
+                                    if(e.target.checked){
+                                      setSelectedOptions(prev => [
+                                        ...prev,
+                                        option
+                                      ]);
+                                    }else{
+                                      setSelectedOptions(prev =>
+                                        prev.filter(
+                                          o => o.id !== option.id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                />
+                                <span className="text-slate-700 dark:text-slate-300">
+                                  {option.name}
+                                </span>
+                              </div>
+                              <span className="font-bold text-amber-500">
+                                + {formatCurrency(
+                                  option.price,
+                                  settings.currency
+                                )}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quantité + Ajouter */}
                   <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="Qté"
-                      value={itemQty}
-                      onChange={(e) => setItemQty(Number(e.target.value))}
-                      className="w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none"
-                    />
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                        Quantité
+                      </label>
+                      <div className="flex">
+                        <input
+                          type="number"
+                          min={selectedProduct?.unit === "Pièce" ? 1 : 0.01}
+                          step={selectedProduct?.unit === "Pièce" ? 1 : 0.01}
+                          value={itemQty}
+                          onChange={(e)=>setItemQty(Number(e.target.value))}
+                          className="w-full px-3 py-2 rounded-l-xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none"
+                        />
+                        <div className="px-3 flex items-center bg-slate-200 dark:bg-slate-700 rounded-r-xl text-xs font-bold">
+                          {selectedProduct?.unit || "-"}
+                        </div>
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={handleAddItem}
-                      className="flex-1 px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1"
+                      className="flex-1 mt-5 px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1"
                     >
-                      <Plus className="w-4 h-4" /> Ajouter
+                      <Plus className="w-4 h-4" />
+                      Ajouter
                     </button>
                   </div>
                 </div>
@@ -441,42 +753,88 @@ export const Orders: React.FC = () => {
               {/* Financial Inputs Breakdown */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Main d'œuvre</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Main d'œuvre
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={laborFee}
-                    onChange={(e) => setLaborFee(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={laborFee === 0 ? "" : laborFee.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\s/g, "")
+                        .replace(/[^\d]/g, "");
+
+                      setLaborFee(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>
+
+
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Transport</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Transport
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={transportFee}
-                    onChange={(e) => setTransportFee(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={transportFee === 0 ? "" : transportFee.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\s/g, "")
+                        .replace(/[^\d]/g, "");
+
+                      setTransportFee(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>
+
+
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Remise</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Remise
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={discount}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={discount === 0 ? "" : discount.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\s/g, "")
+                        .replace(/[^\d]/g, "");
+
+                      setDiscount(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>
+
+
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Acompte Perçu</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Acompte Perçu
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={advancePayment}
-                    onChange={(e) => setAdvancePayment(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={advancePayment === 0 ? "" : advancePayment.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value
+                        .replace(/\s/g, "")
+                        .replace(/[^\d]/g, "");
+
+                      setAdvancePayment(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-emerald-600 outline-none"
                   />
                 </div>

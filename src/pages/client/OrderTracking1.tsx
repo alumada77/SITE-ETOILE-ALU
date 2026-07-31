@@ -22,12 +22,12 @@ const EspaceConstruction: React.FC<Props> = ({
     const config =
         mode === "client"
         ? {
-            title: "ESPACE CLIENT",
+            title: "SUIVI COMMANDE",
             subtitle:
                 "Cette fonctionnalité est actuellement en cours de développement.",
             description:
                 "Nos ingénieurs travaillent activement afin de vous proposer un espace client moderne, sécurisé et simple d'utilisation.",
-            progress: 65,
+            progress: 10,
             }
         : {
             title: "SUIVI DE COMMANDE",
@@ -35,7 +35,7 @@ const EspaceConstruction: React.FC<Props> = ({
                 "Le système intelligent de suivi est en cours de développement.",
             description:
                 "Vous pourrez bientôt suivre vos commandes en temps réel, consulter leur avancement et recevoir les notifications automatiquement.",
-            progress: 80,
+            progress: 10,
             };
 
     const [progress, setProgress] = useState(0);

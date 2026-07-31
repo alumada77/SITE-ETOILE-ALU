@@ -85,7 +85,7 @@ const AppMaintenance = () => {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-2 py-4 md:py-4">
 
-        <div className="w-full max-w-4xl xl:max-w-[1050px] rounded-[30px] border border-white/10 bg-slate-900/75 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,.40)] overflow-hidden">
+        <div className="w-full max-w-screen-2xl xl:max-w-[1050px] rounded-[30px] border border-white/10 bg-slate-900/75 backdrop-blur-2xl shadow-[0_0_40px_rgba(0,0,0,.40)] overflow-hidden">
 
           <div className="grid lg:grid-cols-2">
 

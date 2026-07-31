@@ -26,6 +26,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   addUser: (user: Omit<UserProfile, 'uid'>) => Promise<void>;
   updateUserRole: (uid: string, role: UserRole) => Promise<void>;
+  updateUser: (uid: string, data: Partial<UserProfile>) => Promise<void>;
   deleteUser: (uid: string) => Promise<void>;
   deleteUserAccount: (uid: string) => Promise<void>;
 }
@@ -75,32 +76,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync Firebase Auth state
   useEffect(() => {
+    if (loading) return;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
-      if (user) {
-        // Find or create profile in userList
-        const profile = usersList.find(u => u.uid === user.uid || u.email === user.email);
-        if (profile) {
-          setCurrentUser(profile);
-          localStorage.setItem('etoile_current_user', JSON.stringify(profile));
-        } else {
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            name: user.displayName || user.email?.split('@')[0] || 'Utilisateur',
-            email: user.email || '',
-            role: user.email?.includes('admin') ? 'admin' : 'manager',
-            status: 'active',
-            createdAt: new Date().toISOString()
-          };
-          setCurrentUser(newProfile);
-          localStorage.setItem('etoile_current_user', JSON.stringify(newProfile));
-          set(ref(database, `users/${user.uid}`), newProfile);
-        }
+
+      if (!user) {
+        setCurrentUser(null);
+        localStorage.removeItem("etoile_current_user");
+        return;
+      }
+
+      // Mitady ilay utilisateur ao amin'ny liste
+      const profile = usersList.find(
+        (u) => u.uid === user.uid
+      );
+
+      if (profile) {
+        setCurrentUser(profile);
+        localStorage.setItem(
+          "etoile_current_user",
+          JSON.stringify(profile)
+        );
+
+        console.log(
+          "Utilisateur connecté :",
+          profile.name,
+          "- rôle :",
+          profile.role
+        );
+
+      } else {
+        console.error(
+          "Utilisateur introuvable dans Database :",
+          user.uid
+        );
+
+        // Tsy mamorona manager automatique intsony
+        setCurrentUser(null);
+        localStorage.removeItem("etoile_current_user");
       }
     });
 
     return () => unsubscribe();
-  }, [usersList]);
+
+  }, [loading, usersList]);
 
   const role: UserRole = currentUser ? currentUser.role : 'visitor';
   const isAdmin = role === 'admin';
@@ -168,14 +188,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
         newProfile
       ]);
-
-      setCurrentUser(newProfile);
-
-      localStorage.setItem(
-        'etoile_current_user',
-        JSON.stringify(newProfile)
-      );
-
 
       return newProfile;
 
@@ -325,6 +337,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         addUser,
         updateUserRole,
+        updateUser,
         deleteUser,
         deleteUserAccount: deleteUser,
       }}

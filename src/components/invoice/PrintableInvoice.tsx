@@ -1,8 +1,13 @@
 import React, { useRef } from 'react';
+import html2canvas from "html2canvas-pro";
+import { numberToFrenchWords } from "../../utils/numberToFrenchWords";
+import jsPDF from "jspdf";
 import { QRCodeSVG } from 'qrcode.react';
+import Barcode from "react-barcode";
 import { Printer, Download, X, Building2, Phone, Mail, MapPin, CheckCircle2 } from 'lucide-react';
 import { Invoice, AppSettings } from '../../types';
 import { formatCurrency, formatDate, downloadInvoicePDF } from '../../utils/formatters';
+import logo1 from '../../img/logo1.png';
 
 interface PrintableInvoiceProps {
   invoice: Invoice;
@@ -13,12 +18,88 @@ interface PrintableInvoiceProps {
 export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, settings, onClose }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const element = document.getElementById("printable-invoice");
+
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = 297;
+    const pageHeight = 210;
+    const margin = 5;
+
+    pdf.addImage(
+      imgData,
+      "PNG",
+      margin,
+      margin,
+      pageWidth - margin * 2,
+      pageHeight - margin * 2
+    );
+
+    const pdfBlob = pdf.output("blob");
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    const printWindow = window.open(pdfUrl);
+
+    if (!printWindow) return;
+
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
   };
 
-  const handleDownloadPDF = () => {
-    downloadInvoicePDF(invoice, settings);
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("printable-invoice");
+
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = 297;
+    const pageHeight = 210;
+
+    const margin = 5;
+
+    pdf.addImage(
+      imgData,
+      "PNG",
+      margin,
+      margin,
+      pageWidth - margin * 2,
+      pageHeight - margin * 2
+    );
+
+    pdf.save(`Facture-${invoice.invoiceNumber}.pdf`);
   };
 
   const qrData = JSON.stringify({
@@ -29,26 +110,30 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
     date: invoice.date,
   });
 
+  const amountInWords = numberToFrenchWords(
+    Math.round(invoice.remaining)
+  );
+
   const InvoiceContent = () => {
     return (
-      <div className="text-[9px] leading-tight">
+      <div className="text-[7px] leading-tight scale-[0.92] origin-top">
       <>
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-8 border-b border-slate-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-2 pb-2 border-b border-slate-200">
             <div className="flex items-start gap-4">
               {settings.logo ? (
                 <img
-                  src={settings.logo}
+                  src={logo1 || settings.logo}
                   alt={settings.companyName}
-                  className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm"
+                  className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-2xl">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center font-black text-2xl">
                   EA
                 </div>
               )}
               <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">{settings.companyName}</h1>
+                <h1 className="text-sm font-black text-slate-900 tracking-tight">{settings.companyName}</h1>
                 <p className="text-xs font-medium text-amber-600 dark:text-amber-500">{settings.tagline}</p>
                 <div className="mt-2 text-xs text-slate-500 space-y-0.5">
                   <p className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" /> {settings.phone}</p>
@@ -84,7 +169,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
           </div>
 
           {/* Customer Information */}
-          <div className="my-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/80">
+          <div className="my-2 bg-slate-50 p-2 rounded-lg border border-slate-200/80">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">FACTURÉ À</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -105,39 +190,83 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b-2 border-slate-900 text-slate-900 uppercase font-black tracking-wider">
-                  <th className="py-3 px-2">Désignation</th>
-                  <th className="py-3 px-2 text-center">Unité</th>
-                  <th className="py-3 px-2 text-center">Qté</th>
-                  <th className="py-3 px-2 text-right">Prix Unitaire</th>
-                  <th className="py-3 px-2 text-right">Total Net</th>
+                  <th className="py-1 px-1">Désignation</th>
+                  <th className="py-1 px-1 text-center">Unité</th>
+                  <th className="py-1 px-1 text-center">Qté</th>
+                  <th className="py-1 px-1 text-right">Prix Unitaire</th>
+                  <th className="py-1 px-1 text-right">Total Net</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {invoice.products.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50">
-                    <td className="py-3.5 px-2 font-medium text-slate-900">{item.productName}</td>
-                    <td className="py-3.5 px-2 text-center text-slate-500 font-mono">{item.unit}</td>
-                    <td className="py-3.5 px-2 text-center font-bold text-slate-800">{item.quantity}</td>
-                    <td className="py-3.5 px-2 text-right font-mono text-slate-600">{formatCurrency(item.unitPrice, settings.currency)}</td>
-                    <td className="py-3.5 px-2 text-right font-bold font-mono text-slate-900">{formatCurrency(item.totalPrice, settings.currency)}</td>
+                    <td className="py-1 px-1 align-top">
+                      <p className="font-bold text-slate-900">
+                        {item.productName}
+                      </p>
+
+                      {/* Description */}
+                      {item.description && (
+                        <p className="mt-1 text-[10px] text-slate-500 italic">
+                          {item.description}
+                        </p>
+                      )}
+
+                      {/* Couleur */}
+                      {item.color && (
+                        <p className="text-[10px] text-slate-500">
+                          <span className="font-semibold">Couleur :</span> {item.color}
+                        </p>
+                      )}
+
+                      {/* Dimension */}
+                      {item.dimension && (
+                        <p className="text-[10px] text-slate-500">
+                          <span className="font-semibold">Dimension :</span> {item.dimension}
+                        </p>
+                      )}
+
+                      {/* Options */}
+                      {item.selectedOptions &&
+                        item.selectedOptions.length > 0 && (
+                          <div className="mt-1 space-y-1">
+                            {item.selectedOptions.map((option) => (
+                              <p
+                                key={option.id}
+                                className="text-[10px] text-amber-600 font-medium"
+                              >
+                                ✓ {option.name}
+                                {option.price > 0 && (
+                                  <> (+{formatCurrency(option.price, settings.currency)})</>
+                                )}
+                              </p>
+                            ))}
+                          </div>
+                      )}
+
+                    </td>
+                    <td className="py-1 px-1 text-center text-slate-500 font-mono">{item.unit}</td>
+                    <td className="py-1 px-1 text-center font-bold text-slate-800">{item.quantity}</td>
+                    <td className="py-1 px-1 text-right font-mono text-slate-600">{formatCurrency(item.unitPrice, settings.currency)}</td>
+                    <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">{formatCurrency(item.totalPrice, settings.currency)}</td>
                   </tr>
                 ))}
                 {invoice.laborFee > 0 && (
                   <tr>
-                    <td className="py-3.5 px-2 font-medium text-slate-900">Main d'œuvre, Pose & Assemblage</td>
-                    <td className="py-3.5 px-2 text-center text-slate-500 font-mono">Forfait</td>
-                    <td className="py-3.5 px-2 text-center font-bold text-slate-800">1</td>
-                    <td className="py-3.5 px-2 text-right font-mono text-slate-600">{formatCurrency(invoice.laborFee, settings.currency)}</td>
-                    <td className="py-3.5 px-2 text-right font-bold font-mono text-slate-900">{formatCurrency(invoice.laborFee, settings.currency)}</td>
+                    <td className="py-1 px-1 font-medium text-slate-900">Main d'œuvre, Pose & Assemblage</td>
+                    <td className="py-1 px-1 text-center text-slate-500 font-mono">Forfait</td>
+                    <td className="py-1 px-1 text-center font-bold text-slate-800">1</td>
+                    <td className="py-1 px-1 text-right font-mono text-slate-600">{formatCurrency(invoice.laborFee, settings.currency)}</td>
+                    <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">{formatCurrency(invoice.laborFee, settings.currency)}</td>
                   </tr>
                 )}
                 {invoice.transportFee > 0 && (
                   <tr>
-                    <td className="py-3.5 px-2 font-medium text-slate-900">Transport & Livraison Chantier</td>
-                    <td className="py-3.5 px-2 text-center text-slate-500 font-mono">Trajet</td>
-                    <td className="py-3.5 px-2 text-center font-bold text-slate-800">1</td>
-                    <td className="py-3.5 px-2 text-right font-mono text-slate-600">{formatCurrency(invoice.transportFee, settings.currency)}</td>
-                    <td className="py-3.5 px-2 text-right font-bold font-mono text-slate-900">{formatCurrency(invoice.transportFee, settings.currency)}</td>
+                    <td className="py-1 px-1 font-medium text-slate-900">Transport & Livraison Chantier</td>
+                    <td className="py-1 px-1 text-center text-slate-500 font-mono">Trajet</td>
+                    <td className="py-1 px-1 text-center font-bold text-slate-800">1</td>
+                    <td className="py-1 px-1 text-right font-mono text-slate-600">{formatCurrency(invoice.transportFee, settings.currency)}</td>
+                    <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">{formatCurrency(invoice.transportFee, settings.currency)}</td>
                   </tr>
                 )}
               </tbody>
@@ -145,16 +274,24 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
           </div>
 
           {/* Totals & Financial Breakdown */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-8 pt-6 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-2 pt-2 border-t border-slate-200">
             {/* Left: QR Code & Barcode */}
             <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
               <QRCodeSVG value={qrData} size={80} level="M" />
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CODE FACTURE</p>
-                <div className="font-mono text-xs font-bold text-slate-800 tracking-widest mt-1">
-                  ||| | ||||| || ||| |||| |
+                <div className="mt-2">
+                  <Barcode
+                    value={invoice.invoiceNumber}
+                    width={1.5}
+                    height={35}
+                    fontSize={10}
+                    displayValue={false}
+                    background="#ffffff"
+                    lineColor="#0f172a"
+                  />
                 </div>
-                <p className="font-mono text-[10px] text-slate-500 mt-1">{invoice.invoiceNumber}</p>
+                <p className="font-mono text-[10px] text-slate-500 mt-1">{invoice.invoiceNumber} {invoice.orderNumber} {invoice.trackingNumber}</p>
                 <p className="text-[10px] text-slate-400 mt-2">Scannez pour vérifier l'authenticité</p>
               </div>
             </div>
@@ -192,8 +329,22 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
             </div>
           </div>
 
+          {/* Montant en lettres - pleine largeur */}
+          <div className="mt-4 w-full border-2 border-slate-300 rounded-xl bg-slate-50 px-5 py-4">
+            <p className="text-[10px] uppercase tracking-[2px] font-bold text-slate-500 mb-2">
+              ARRÊTÉE À LA SOMME DE :
+            </p>
+
+            <p className="text-sm leading-7 text-justify font-bold uppercase text-slate-900">
+              {numberToFrenchWords(Math.round(invoice.total))} ARIARY
+              <span className="font-normal normal-case">
+                {" "}({formatCurrency(invoice.total, settings.currency)})
+              </span>
+            </p>
+          </div>
+
           {/* Signatures */}
-          <div className="mt-14 pt-8 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs">
+          <div className="mt-4 pt-2 border-t border-slate-200 grid grid-cols-2 gap-2 text-center text-xs">
             <div>
               <p className="font-bold text-slate-700">Signature Client</p>
               <p className="text-[10px] text-slate-400 mt-1">Mention "Bon pour accord"</p>
@@ -207,10 +358,17 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
               </div>
             </div>
           </div>
+
+          {/* Pied de facture */}
+          <div className="mt-6 rounded-xl border border-slate-300 bg-slate-50 px-5 py-4 text-center">
+            <p className="mt-3 text-[10px] text-slate-500">
+              Merci pour votre confiance, Cette facture tient lieu de justificatif de garantie. Veuillez la conserver précieusement.
+            </p>
+          </div>
       </>
     </div>
     )
-    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-md p-4 sm:p-6 flex items-center justify-center">
@@ -253,17 +411,38 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
 
         {/* Invoice Printable Content */}
         <div
-          className="p-6 overflow-y-auto print:p-0 print:overflow-visible"
+          className="
+            p-2 
+            overflow-y-auto 
+            print:p-0 
+            print:overflow-visible
+          "
           ref={printRef}
           id="printable-invoice"
         >
+          <div
+            className="
+              flex flex-row 
+              w-full 
+              gap-2
+              print:w-[297mm]
+              print:h-[210mm]
+            "
+          >
 
-          <div className="flex flex-row w-full">
+            {/* GAUCHE ORIGINAL */}
+            <div
+              className="
+                w-1/2 
+                border-r 
+                border-dashed 
+                border-slate-300 
+                pr-2
+                overflow-hidden
+              "
+            >
 
-            {/* GAUCHE - ORIGINAL */}
-            <div className="w-1/2 border-r border-dashed border-slate-300 pr-6">
-
-              <div className="text-right text-xs font-black text-slate-400 mb-3">
+              <div className="text-right text-[8px] font-black text-slate-400 mb-1">
                 ORIGINAL
               </div>
 
@@ -272,10 +451,16 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
             </div>
 
 
-            {/* DROITE - COPIE */}
-            <div className="w-1/2 pl-6">
+            {/* DROITE COPIE */}
+            <div
+              className="
+                w-1/2 
+                pl-2
+                overflow-hidden
+              "
+            >
 
-              <div className="text-right text-xs font-black text-slate-400 mb-3">
+              <div className="text-right text-[8px] font-black text-slate-400 mb-1">
                 COPIE
               </div>
 
@@ -283,9 +468,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
 
             </div>
 
-
           </div>
-
         </div>
 
       </div>

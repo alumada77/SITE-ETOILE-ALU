@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Send
 } from 'lucide-react';
-import { useData } from '../../contexts/DataContext';
+import { useData, generateTrackingNumber } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Quote, OrderItem, QuoteStatus } from '../../types';
 import { formatCurrency, formatDate, generateQuoteNumber } from '../../utils/formatters';
@@ -40,6 +40,12 @@ export const Quotes: React.FC = () => {
   // Item builder
   const [selectedProductId, setSelectedProductId] = useState('');
   const [itemQty, setItemQty] = useState<number>(1);
+  const [selectedOptions, setSelectedOptions] = useState<ProductOption[]>([]);
+
+  // Produit sélectionné
+  const selectedProduct = products.find(
+    p => p.id === selectedProductId
+  );
 
   const handleOpenAdd = () => {
     setSelectedCustomerId(customers[0]?.id || '');
@@ -55,27 +61,45 @@ export const Quotes: React.FC = () => {
   const handleAddItem = () => {
     const prod = products.find(p => p.id === selectedProductId);
     if (!prod) return;
+    const optionsTotal =
+      selectedOptions.reduce(
+        (sum, option) => sum + option.price,
+        0
+      );
+
+    const unitPrice =
+      prod.price + optionsTotal;
 
     const newItem: OrderItem = {
       productId: prod.id,
       productName: prod.name,
       unit: prod.unit,
-      unitPrice: prod.price,
       quantity: Number(itemQty),
-      totalPrice: prod.price * Number(itemQty)
+      unitPrice,
+      totalPrice:
+        unitPrice * Number(itemQty),
+
+      selectedOptions
     };
 
-    setQuoteItems(prev => [...prev, newItem]);
+    setQuoteItems(prev => [
+      ...prev,
+      newItem
+    ]);
+
     setSelectedProductId('');
+    setSelectedOptions([]);
     setItemQty(1);
+
   };
+  
 
   const handleRemoveItem = (idx: number) => {
     setQuoteItems(prev => prev.filter((_, i) => i !== idx));
   };
 
   const subtotal = quoteItems.reduce((acc, item) => acc + item.totalPrice, 0);
-  const taxAmount = ((subtotal + laborFee + transportFee - discount) * settings.defaultTaxRate) / 100;
+  const taxAmount = ((subtotal + laborFee + transportFee - discount) * (parseFloat(settings.tva) || 0)) / 100;
   const totalAmount = Math.max(0, subtotal + laborFee + transportFee - discount + taxAmount);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,7 +125,7 @@ export const Quotes: React.FC = () => {
         laborFee,
         transportFee,
         discount,
-        taxRate: settings.defaultTaxRate,
+        taxRate: settings.tva? parseFloat(settings.tva) || 0 : 0,
         taxAmount,
         total: totalAmount,
         validUntil,
@@ -133,6 +157,7 @@ export const Quotes: React.FC = () => {
         totalAmount: q.total,
         advancePayment: 0,
         remainingAmount: q.total,
+        trackingNumber: generateTrackingNumber(),
         status: 'Nouveau',
         notes: `Converti depuis devis N° ${q.quoteNumber}`
       });
@@ -309,8 +334,8 @@ export const Quotes: React.FC = () => {
                 <h4 className="text-xs font-extrabold uppercase text-amber-600 dark:text-amber-400">
                   SELECTIONNER LES OUVRAGES
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
+                <div className="space-y-5">
+                  <div className="space-y-4">
                     <select
                       value={selectedProductId}
                       onChange={(e) => setSelectedProductId(e.target.value)}
@@ -323,15 +348,102 @@ export const Quotes: React.FC = () => {
                         </option>
                       ))}
                     </select>
+
+                    {/* ⬇️ APETRAKA ETO NY OPTIONS */}
+                    {selectedProduct?.options &&
+                      selectedProduct.options.length > 0 && (
+
+                      <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+
+                        <p className="text-xs font-bold uppercase mb-3 text-amber-500">
+                          Options disponibles
+                        </p>
+
+                        <div className="space-y-2">
+
+                          {selectedProduct.options.map(option => {
+
+                            const checked = selectedOptions.some(
+                              o => o.id === option.id
+                            );
+
+                            return (
+                              <label
+                                key={option.id}
+                                className="flex items-center justify-between text-xs cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2">
+
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(e) => {
+
+                                      if (e.target.checked) {
+
+                                        setSelectedOptions(prev => [
+                                          ...prev,
+                                          option
+                                        ]);
+
+                                      } else {
+
+                                        setSelectedOptions(prev =>
+                                          prev.filter(o => o.id !== option.id)
+                                        );
+
+                                      }
+
+                                    }}
+                                  />
+
+                                  <span>{option.name}</span>
+
+                                </div>
+
+                                <span className="font-bold text-amber-500">
+                                  + {formatCurrency(option.price, settings.currency)}
+                                </span>
+
+                              </label>
+                            );
+
+                          })}
+
+                        </div>
+
+                      </div>
+
+                    )}
+
                   </div>
+
+                  {/* Quantité */}
                   <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      value={itemQty}
-                      onChange={(e) => setItemQty(Number(e.target.value))}
-                      className="w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 outline-none"
-                    />
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-500 mb-2">
+                        Quantité
+                      </label>
+
+                      <div className="flex">
+
+                        <input
+                          type="number"
+                          min={selectedProduct?.unit === "Pièce" ? 1 : 0.01}
+                          step={selectedProduct?.unit === "Pièce" ? 1 : 0.01}
+                          value={itemQty}
+                          onChange={(e) => setItemQty(Number(e.target.value))}
+                          className="flex-1 px-4 py-3 rounded-l-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-bold outline-none"
+                        />
+
+                        <div className="px-4 flex items-center bg-slate-200 dark:bg-slate-700 rounded-r-xl text-xs font-bold">
+                          {selectedProduct?.unit || "-"}
+                        </div>
+
+                      </div>
+
+                    </div>
+
                     <button
                       type="button"
                       onClick={handleAddItem}
@@ -350,8 +462,25 @@ export const Quotes: React.FC = () => {
                   {quoteItems.map((item, idx) => (
                     <div key={idx} className="p-3 bg-white dark:bg-slate-900 flex items-center justify-between text-xs">
                       <div>
-                        <p className="font-bold text-slate-900 dark:text-white">{item.productName}</p>
-                        <p className="text-[11px] text-slate-400">{item.quantity} {item.unit} x {item.unitPrice.toLocaleString('fr-FR')} {settings.currency}</p>
+                        <p className="font-bold text-slate-900 dark:text-white">
+                          {item.productName}
+                        </p>
+                        {item.selectedOptions &&
+                          item.selectedOptions.length > 0 && (
+                            <div className="mt-1 space-y-1">
+                              {item.selectedOptions.map(option => (
+                                <p
+                                  key={option.id}
+                                  className="text-[10px] text-amber-500 font-medium"
+                                >
+                                  • {option.name}
+                                </p>
+                              ))}
+                            </div>
+                        )}
+                        <p className="text-[11px] text-slate-400">
+                          {item.quantity} {item.unit} × {formatCurrency(item.unitPrice, settings.currency)}
+                        </p>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
@@ -369,32 +498,55 @@ export const Quotes: React.FC = () => {
               {/* Fees */}
               <div className="grid grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Main d'œuvre</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Main d'œuvre
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={laborFee}
-                    onChange={(e) => setLaborFee(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={laborFee === 0 ? "" : laborFee.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\s/g, "").replace(/[^\d]/g, "");
+                      setLaborFee(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Transport</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Transport
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={transportFee}
-                    onChange={(e) => setTransportFee(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={transportFee === 0 ? "" : transportFee.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\s/g, "").replace(/[^\d]/g, "");
+                      setTransportFee(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Remise</label>
+                  <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    Remise
+                  </label>
+
                   <input
-                    type="number"
-                    min={0}
-                    value={discount}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={discount === 0 ? "" : discount.toLocaleString("fr-FR")}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\s/g, "").replace(/[^\d]/g, "");
+                      setDiscount(Number(value) || 0);
+                    }}
+                    placeholder="0"
                     className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white outline-none"
                   />
                 </div>

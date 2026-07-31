@@ -67,27 +67,41 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const handleUpdateUser = async () => {
+  const handleUpdateUser = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+
+    e.preventDefault(); // <-- Tsy hanao actualisation ny page
+
     if (!editUserId) return;
 
     try {
       await updateUser(editUserId, {
         name: editName,
         email: editEmail,
-        role: editRole
+        role: editRole,
       });
 
       setToast({
         message: "Informations utilisateur mises à jour",
-        type: "success"
+        type: "success",
       });
 
+      // Akatona ny modal
+      setIsEditModalOpen(false);
+
+      // Reset
       setEditUserId(null);
+      setEditName("");
+      setEditEmail("");
+      setEditRole("visitor");
 
     } catch (err: any) {
+      console.error(err);
+
       setToast({
         message: err.message || "Erreur de modification",
-        type: "error"
+        type: "error",
       });
     }
   };

@@ -1,54 +1,68 @@
 @import "tailwindcss";
 
+/* ===========================
+   GLOBAL
+=========================== */
+
+html,
+body,
+#root{
+    width:100%;
+    min-height:100%;
+    margin:0;
+    padding:0;
+}
+
+html{
+    overflow-x:hidden;
+}
+
+body{
+    overflow-x:hidden;
+    font-family:Inter,sans-serif;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+img,
+svg,
+video,
+canvas{
+    max-width:100%;
+    height:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+
+/* ===========================
+   PRINT
+=========================== */
+
 @media print {
 
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 5mm;
   }
-
 
   body {
-    background: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-
-  .invoice-copy-wrapper {
-    display: flex;
-    width: 100%;
+  #printable-invoice {
+    width: 287mm;
+    height: 200mm;
   }
 
-
-  .invoice-copy {
-    width: 50%;
-    padding: 8mm;
-    box-sizing: border-box;
-    position: relative;
-  }
-
-
-  .invoice-label {
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 2px;
-  }
-
-
-  .print\:p-0 {
-    padding: 0 !important;
-  }
-
-
-  .print\:overflow-visible {
-    overflow: visible !important;
-  }
-
-
-  button {
-    display: none !important;
+  .invoice-half {
+    width:50%;
   }
 
 }

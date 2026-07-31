@@ -55,9 +55,18 @@ export interface OrderItem {
   productId: string;
   productName: string;
   unit: string;
-  unitPrice: number;
   quantity: number;
+  unitPrice: number;
   totalPrice: number;
+  trackingNumber?: string;
+  fabricationStatus?: string;
+  fabricationProgress?: number;
+  // Options produit
+  selectedOptions?: {
+    id:string;
+    name:string;
+    price:number;
+  }[];
 }
 
 export type OrderStatus = 
@@ -119,6 +128,7 @@ export interface Invoice {
   id: string;
   invoiceNumber: string; // e.g. FAC-2026-0001
   orderId?: string;
+  orderNumber?: string;
   customerId: string;
   customerName: string;
   customerPhone: string;
@@ -132,6 +142,7 @@ export interface Invoice {
   taxRate: number;
   taxAmount: number;
   total: number;
+  trackingNumber?: string;
   advance: number;
   remaining: number;
   date: string;
@@ -159,6 +170,7 @@ export interface AppSettings {
   companyName: string;
   tagline: string;
   logo: string;
+  logopdf: string;
   phone: string;
   whatsapp: string;
   email: string;
@@ -168,6 +180,6 @@ export interface AppSettings {
   stat: string;
   tva?: string;
   currency: string; // e.g. "Ar" or "FCFA" or "€"
-  defaultTaxRate: number;
+  defaultTaxRate: string;
   googleMapsEmbedUrl: string;
 }

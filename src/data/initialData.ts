@@ -10,8 +10,8 @@ export const INITIAL_SETTINGS: AppSettings = {
   nif: "",
   stat: "",
   tva: "",
-  currency: "Ar",
-  defaultTaxRate: 0,
+  currency: "MGA",
+  defaultTaxRate: "",
   whatsapp: "",
   googleMapsEmbedUrl: ""
 };

@@ -40,7 +40,7 @@ export const Catalogue: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-3">
+        <div className="text-center max-w-screen-2xl mx-auto space-y-3">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-wider">
             <ShoppingBag className="w-4 h-4" />
             CATALOGUE COMPLET DES OUVRAGES
@@ -214,8 +214,13 @@ export const Catalogue: React.FC = () => {
                 <h4 className="text-xs font-extrabold uppercase text-slate-400 tracking-wider">
                   DESCRIPTION TECHNIQUE
                 </h4>
-                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  {selectedProductModal.description}
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {selectedProductModal.description.split("\n").map((line, index) => (
+                      <React.Fragment key={index}>
+                        {line}
+                      <br />
+                    </React.Fragment>
+                  ))}
                 </p>
               </div>
               <div>
