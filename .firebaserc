@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "aluminium-erp-5d0e9"
-  }
+  },
+  "targets": {
+    "aluminium-erp-5d0e9": {
+      "hosting": {
+        "etoile-alu": [
+          "etoile-alu"
+        ],
+        "default": [
+          "aluminium-erp-5d0e9"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
