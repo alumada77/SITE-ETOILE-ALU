@@ -592,6 +592,12 @@ export const Quotes: React.FC = () => {
         // Remplacer les couleurs modernes non supportées par html2canvas
         const allElements = clone.querySelectorAll("*");
 
+        const noPrintElements = clone.querySelectorAll(".no-print");
+
+        noPrintElements.forEach((el) => {
+          (el as HTMLElement).style.display = "none";
+        });
+
         allElements.forEach((el) => {
           const htmlEl = el as HTMLElement;
 
@@ -1488,6 +1494,7 @@ export const Quotes: React.FC = () => {
               <button
                 onClick={() => setIsQuotePreviewOpen(false)}
                 className="
+                  pdf-exclude
                   no-print
                   px-4
                   py-2
