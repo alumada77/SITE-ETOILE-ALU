@@ -92,6 +92,7 @@ export function App() {
               <Route path="/app/quotes" element={<ProtectedErpLayout><Quotes /></ProtectedErpLayout>} />
               <Route path="/app/invoices" element={<ProtectedErpLayout><Invoices /></ProtectedErpLayout>} />
               <Route path="/app/cashflow" element={<ProtectedErpLayout><Cashflow /></ProtectedErpLayout>} />
+              <Route path="/app/inbox" element={<ProtectedErpLayout><Inbox /></ProtectedErpLayout>}/>
               <Route path="/app/users" element={<ProtectedErpLayout><UsersPage /></ProtectedErpLayout>} />
               <Route path="/app/settings" element={<ProtectedErpLayout><SettingsPage /></ProtectedErpLayout>} />
 

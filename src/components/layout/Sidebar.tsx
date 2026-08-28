@@ -72,6 +72,12 @@ export const Sidebar: React.FC = () => {
       allowed: isManager,
     },
     {
+      label: "Inbox",
+      icon: Mail,
+      path: "/app/inbox",
+      allowed: isManager,
+    },
+    {
       label: 'Utilisateurs & Rôles',
       path: '/app/users',
       icon: UserCheck,
