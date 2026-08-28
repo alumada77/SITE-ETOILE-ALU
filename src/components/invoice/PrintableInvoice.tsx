@@ -116,7 +116,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({ invoice, set
 
   const InvoiceContent = () => {
     return (
-      <div className="text-[7px] leading-tight scale-[0.92] origin-top">
+      <div className="text-[7px] leading-tight  origin-top">
       <>
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start gap-2 pb-2 border-b border-slate-200">
