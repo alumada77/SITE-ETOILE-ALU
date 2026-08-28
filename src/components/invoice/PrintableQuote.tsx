@@ -1155,18 +1155,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           <div>
 
-            <p className="
-              font-bold
-              text-slate-700
-            ">
+            <p className="font-bold text-slate-700">
               La Direction - {settings.companyName}
             </p>
 
-            <p className="
-              text-[10px]
-              text-slate-400
-              mt-1
-            ">
+            <p className="text-[10px] text-slate-400 mt-1">
               Cachet officiel et signature
             </p>
 
