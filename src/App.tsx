@@ -24,6 +24,7 @@ import { Orders } from './pages/app/Orders';
 import { Quotes } from './pages/app/Quotes';
 import { Invoices } from './pages/app/Invoices';
 import { Cashflow } from './pages/app/Cashflow';
+import Inbox from './pages/app/Inbox';
 import { UsersPage } from './pages/app/Users';
 import { SettingsPage } from './pages/app/Settings';
 

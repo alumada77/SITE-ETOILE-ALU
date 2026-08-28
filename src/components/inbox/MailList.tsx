@@ -12,11 +12,13 @@ export default function MailList({
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    loadMails();
+    }, [folder]);
 
-    // TEMPORAIRE
-    setMails([]);
-
-  }, [folder]);
+    const loadMails = async () => {
+    const data = await getGmailMessages(folder);
+    setMails(data);
+  };
 
   const filtered = mails.filter((mail) =>
     `${mail.subject} ${mail.from?.email}`
