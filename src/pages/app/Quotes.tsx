@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { 
   FileText, 
   Plus, 
   Search, 
   Trash2, 
-  Edit3, 
+  Edit3,
+  Download,
+  Eye, 
   CheckCircle2, 
   X, 
   Printer, 
@@ -17,13 +21,19 @@ import { Quote, OrderItem, QuoteStatus } from '../../types';
 import { formatCurrency, formatDate, generateQuoteNumber } from '../../utils/formatters';
 import { Toast, ToastType } from '../../components/ui/Toast';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { PrintableQuote } from "../../components/invoice/PrintableQuote";
 
 export const Quotes: React.FC = () => {
-  const { quotes, customers, products, addQuote, updateQuoteStatus, deleteQuote, addOrder, settings } = useData();
+  const { quotes, customers, products, addQuote, updateQuote, updateQuoteStatus, deleteQuote, addOrder, settings } = useData();
   const { isAdmin } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isQuotePreviewOpen, setIsQuotePreviewOpen] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [selectedQuoteForPrint, setSelectedQuoteForPrint] = useState<Quote | null>(null);
+
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -48,6 +58,8 @@ export const Quotes: React.FC = () => {
   );
 
   const handleOpenAdd = () => {
+    setEditingQuoteId(null);
+
     setSelectedCustomerId(customers[0]?.id || '');
     setQuoteItems([]);
     setLaborFee(0);
@@ -55,7 +67,41 @@ export const Quotes: React.FC = () => {
     setDiscount(0);
     setValidDays(30);
     setNotes('');
+
     setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (quote: Quote) => {
+    setEditingQuoteId(quote.id);
+
+    setSelectedCustomerId(quote.customerId);
+    setQuoteItems(quote.products || []);
+    setLaborFee(quote.laborFee || 0);
+    setTransportFee(quote.transportFee || 0);
+    setDiscount(quote.discount || 0);
+    setNotes(quote.notes || '');
+
+    // Calcul de la durée de validité restante
+    if (quote.validUntil) {
+      const today = new Date();
+      const validUntil = new Date(quote.validUntil);
+
+      const diff =
+        Math.ceil(
+          (validUntil.getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24)
+        );
+
+      setValidDays(Math.max(1, diff));
+    } else {
+      setValidDays(30);
+    }
+
+    setIsModalOpen(true);
+  };
+
+  const handleOpenVoir = (quote: Quote) => {
+    setIsQuotePreviewOpen(true);
   };
 
   const handleAddItem = () => {
@@ -113,9 +159,13 @@ export const Quotes: React.FC = () => {
     if (!cust) return;
 
     try {
-      const validUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const validUntil = new Date(
+        Date.now() + validDays * 24 * 60 * 60 * 1000
+      )
+        .toISOString()
+        .split('T')[0];
 
-      await addQuote({
+      const quoteData = {
         customerId: cust.id,
         customerName: cust.name,
         customerPhone: cust.phone,
@@ -125,18 +175,44 @@ export const Quotes: React.FC = () => {
         laborFee,
         transportFee,
         discount,
-        taxRate: settings.tva? parseFloat(settings.tva) || 0 : 0,
+        taxRate: settings.tva
+          ? parseFloat(settings.tva) || 0
+          : 0,
         taxAmount,
         total: totalAmount,
         validUntil,
-        status: 'En attente',
         notes
-      });
+      };
 
-      setToast({ message: 'Devis créé avec succès', type: 'success' });
+      if (editingQuoteId) {
+        await updateQuote(editingQuoteId, quoteData);
+
+        setToast({
+          message: 'Devis modifié avec succès',
+          type: 'success'
+        });
+      } else {
+        await addQuote({
+          ...quoteData,
+          status: 'En attente'
+        });
+
+        setToast({
+          message: 'Devis créé avec succès',
+          type: 'success'
+        });
+      }
+
       setIsModalOpen(false);
+      setEditingQuoteId(null);
+
     } catch (err: any) {
-      setToast({ message: err.message || 'Erreur lors de la création du devis', type: 'error' });
+      setToast({
+        message:
+          err.message ||
+          'Erreur lors de l’enregistrement du devis',
+        type: 'error'
+      });
     }
   };
 
@@ -179,6 +255,199 @@ export const Quotes: React.FC = () => {
     } finally {
       setDeleteTargetId(null);
     }
+  };
+
+  const handlePrintQuote = (quote: Quote) => {
+    setSelectedQuote(quote);
+
+    setTimeout(() => {
+      const element = document.getElementById("printable-quote");
+
+      if (!element) {
+        setToast({
+          message: "Aucun contenu à imprimer.",
+          type: "error",
+        });
+        return;
+      }
+
+      const printWindow = window.open("", "_blank");
+
+      if (!printWindow) {
+        setToast({
+          message: "Impossible d'ouvrir la fenêtre d'impression.",
+          type: "error",
+        });
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="fr">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Proforma ${quote.quoteNumber}</title>
+
+            <style>
+              @page {
+                size: A4 landscape;
+                margin: 5mm;
+              }
+
+              * {
+                box-sizing: border-box;
+              }
+
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                background: #ffffff !important;
+                font-family: Arial, Helvetica, sans-serif;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+
+              body {
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+              }
+
+              #printable-quote {
+                width: 287mm !important;
+                min-height: 200mm !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                overflow: hidden;
+              }
+
+              button {
+                display: none !important;
+              }
+
+              img {
+                max-width: 100%;
+              }
+
+              table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+            </style>
+          </head>
+
+          <body>
+            ${element.outerHTML}
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+
+        setTimeout(() => {
+          printWindow.close();
+        }, 500);
+      }, 700);
+    }, 300);
+  };
+
+
+  const handleDownloadQuote = async (quote: Quote) => {
+    setSelectedQuote(quote);
+
+    setTimeout(async () => {
+      const element = document.getElementById("printable-quote");
+
+      if (!element) {
+        console.error("PrintableQuote introuvable");
+        return;
+      }
+
+      try {
+        // Clone pour éviter que html2canvas touche directement au contenu affiché
+        const clone = element.cloneNode(true) as HTMLElement;
+
+        clone.style.backgroundColor = "#ffffff";
+        clone.style.color = "#0f172a";
+
+        // Remplacer les couleurs modernes non supportées par html2canvas
+        const allElements = clone.querySelectorAll("*");
+
+        allElements.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+
+          htmlEl.style.setProperty(
+            "color",
+            htmlEl.style.color || "#0f172a"
+          );
+
+          htmlEl.style.setProperty(
+            "background-color",
+            htmlEl.style.backgroundColor || "transparent"
+          );
+
+          htmlEl.style.setProperty(
+            "border-color",
+            htmlEl.style.borderColor || "#e2e8f0"
+          );
+        });
+
+        clone.style.position = "fixed";
+        clone.style.left = "-10000px";
+        clone.style.top = "0";
+        clone.style.width = "287mm";
+        clone.style.minHeight = "200mm";
+        clone.style.zIndex = "-1";
+
+        document.body.appendChild(clone);
+
+        const canvas = await html2canvas(clone, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+        });
+
+        document.body.removeChild(clone);
+
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "mm",
+          format: "a4",
+        });
+
+        const pageWidth = 297;
+        const pageHeight = 210;
+        const margin = 5;
+
+        pdf.addImage(
+          imgData,
+          "PNG",
+          margin,
+          margin,
+          pageWidth - margin * 2,
+          pageHeight - margin * 2
+        );
+
+        pdf.save(`Proforma-${quote.quoteNumber}.pdf`);
+
+      } catch (error) {
+        console.error("Erreur génération PDF :", error);
+
+        setToast({
+          message: "Erreur lors de la génération du PDF.",
+          type: "error",
+        });
+      }
+    }, 300);
   };
 
   const filteredQuotes = quotes.filter(q =>
@@ -274,25 +543,134 @@ export const Quotes: React.FC = () => {
                     </select>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1.5">
+
+                      {/* VOIR */}
+                      <button
+                        onClick={() => handleOpenVoir(q)}
+                        title="Voir le devis"
+                        className="
+                          p-2
+                          rounded-xl
+                          bg-blue-50
+                          dark:bg-blue-950/30
+                          text-blue-600
+                          dark:text-blue-400
+                          hover:bg-blue-600
+                          hover:text-white
+                          transition-all
+                        "
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
+                      {/* MODIFIER */}
+                      <button
+                        onClick={() => handleOpenEdit(q)}
+                        title="Modifier le devis"
+                        className="
+                          p-2
+                          rounded-xl
+                          bg-blue-50
+                          dark:bg-blue-950/30
+                          text-blue-600
+                          dark:text-blue-400
+                          hover:bg-blue-600
+                          hover:text-white
+                          transition-all
+                        "
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+
+
+                      {/* IMPRIMER */}
+                      <button
+                        onClick={() => handlePrintQuote(q)}
+                        title="Imprimer le devis"
+                        className="
+                          p-2
+                          rounded-xl
+                          bg-slate-100
+                          dark:bg-slate-800
+                          text-slate-600
+                          dark:text-slate-300
+                          hover:bg-slate-900
+                          hover:text-white
+                          transition-all
+                        "
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+
+
+                      {/* TELECHARGER PDF */}
+                      <button
+                        onClick={() => handleDownloadQuote(q)}
+                        title="Télécharger le devis PDF"
+                        className="
+                          p-2
+                          rounded-xl
+                          bg-emerald-50
+                          dark:bg-emerald-950/30
+                          text-emerald-600
+                          dark:text-emerald-400
+                          hover:bg-emerald-600
+                          hover:text-white
+                          transition-all
+                        "
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+
+
+                      {/* CONVERTIR EN COMMANDE */}
                       {q.status !== 'Accepté' && (
                         <button
                           onClick={() => handleConvertToOrder(q)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-[11px] shadow-sm hover:bg-amber-400 transition-colors"
                           title="Convertir en Commande"
+                          className="
+                            flex
+                            items-center
+                            gap-1
+                            px-3
+                            py-1.5
+                            rounded-xl
+                            bg-amber-500
+                            text-slate-950
+                            font-bold
+                            text-[11px]
+                            shadow-sm
+                            hover:bg-amber-400
+                            transition-colors
+                          "
                         >
                           <ArrowRight className="w-3.5 h-3.5" />
-                          Transformer en Commande
+                          Transformer
                         </button>
                       )}
+
+
+                      {/* SUPPRIMER */}
                       {isAdmin && (
                         <button
                           onClick={() => setDeleteTargetId(q.id)}
-                          className="p-1.5 rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-600 hover:text-white transition-colors"
+                          title="Supprimer"
+                          className="
+                            p-2
+                            rounded-xl
+                            bg-rose-100
+                            dark:bg-rose-950/40
+                            text-rose-600
+                            hover:bg-rose-600
+                            hover:text-white
+                            transition-all
+                          "
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
+
                     </div>
                   </td>
                 </tr>
@@ -578,6 +956,355 @@ export const Quotes: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {isQuotePreviewOpen && selectedQuote && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            bg-slate-900/80
+            backdrop-blur-sm
+            flex
+            items-center
+            justify-center
+            p-4
+            overflow-auto
+          "
+        >
+
+          <div
+            id="printable-quote"
+            className="
+              bg-white
+              text-slate-900
+              w-full
+              max-w-[1100px]
+              min-h-[700px]
+              rounded-2xl
+              shadow-2xl
+              p-8
+            "
+          >
+
+            {/* HEADER */}
+
+            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+
+              <div>
+                <h1 className="text-2xl font-black uppercase">
+                  {settings.companyName}
+                </h1>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  Aluminium • Inox • Vitrerie
+                </p>
+              </div>
+
+              <div className="text-right">
+
+                <h2 className="text-3xl font-black text-amber-600">
+                  DEVIS
+                </h2>
+
+                <p className="text-sm font-bold mt-1">
+                  N° {selectedQuote.quoteNumber}
+                </p>
+
+                <p className="text-xs text-slate-500">
+                  Date : {formatDate(selectedQuote.createdAt)}
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {/* CLIENT */}
+
+            <div className="grid grid-cols-2 gap-8 mt-6">
+
+              <div>
+
+                <p className="text-[10px] font-black uppercase text-slate-400">
+                  Client
+                </p>
+
+                <p className="font-black text-lg">
+                  {selectedQuote.customerName}
+                </p>
+
+                <p className="text-sm">
+                  {selectedQuote.customerPhone}
+                </p>
+
+                <p className="text-sm">
+                  {selectedQuote.customerAddress}
+                </p>
+
+              </div>
+
+
+              <div className="text-right">
+
+                <p className="text-[10px] font-black uppercase text-slate-400">
+                  Validité
+                </p>
+
+                <p className="font-bold">
+                  Jusqu'au {selectedQuote.validUntil}
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {/* PRODUITS */}
+
+            <table className="w-full mt-8 border-collapse">
+
+              <thead>
+
+                <tr className="bg-slate-900 text-white text-xs uppercase">
+
+                  <th className="p-3 text-left">
+                    Désignation
+                  </th>
+
+                  <th className="p-3 text-center">
+                    Qté
+                  </th>
+
+                  <th className="p-3 text-right">
+                    Prix unitaire
+                  </th>
+
+                  <th className="p-3 text-right">
+                    Total
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {selectedQuote.products.map((item, index) => (
+
+                  <tr
+                    key={index}
+                    className="border-b border-slate-200 text-sm"
+                  >
+
+                    <td className="p-3">
+
+                      <p className="font-bold">
+                        {item.productName}
+                      </p>
+
+                      {item.selectedOptions?.map(option => (
+                        <p
+                          key={option.id}
+                          className="text-[10px] text-slate-500"
+                        >
+                          • {option.name}
+                        </p>
+                      ))}
+
+                    </td>
+
+                    <td className="p-3 text-center">
+                      {item.quantity} {item.unit}
+                    </td>
+
+                    <td className="p-3 text-right">
+                      {formatCurrency(
+                        item.unitPrice,
+                        settings.currency
+                      )}
+                    </td>
+
+                    <td className="p-3 text-right font-bold">
+                      {formatCurrency(
+                        item.totalPrice,
+                        settings.currency
+                      )}
+                    </td>
+
+                  </tr>
+
+                ))}
+
+              </tbody>
+
+            </table>
+
+
+            {/* TOTAL */}
+
+            <div className="flex justify-end mt-6">
+
+              <div className="w-80 space-y-2 text-sm">
+
+                <div className="flex justify-between">
+                  <span>Sous-total</span>
+                  <strong>
+                    {formatCurrency(
+                      selectedQuote.subtotal,
+                      settings.currency
+                    )}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Main d'œuvre</span>
+                  <strong>
+                    {formatCurrency(
+                      selectedQuote.laborFee,
+                      settings.currency
+                    )}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Transport</span>
+                  <strong>
+                    {formatCurrency(
+                      selectedQuote.transportFee,
+                      settings.currency
+                    )}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Remise</span>
+                  <strong>
+                    - {formatCurrency(
+                      selectedQuote.discount,
+                      settings.currency
+                    )}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between border-t-2 border-slate-900 pt-3 text-lg">
+
+                  <span className="font-black">
+                    TOTAL
+                  </span>
+
+                  <strong className="text-amber-600">
+                    {formatCurrency(
+                      selectedQuote.total,
+                      settings.currency
+                    )}
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* NOTES */}
+
+            {selectedQuote.notes && (
+              <div className="mt-8">
+
+                <p className="text-[10px] uppercase font-black text-slate-400">
+                  Notes
+                </p>
+
+                <p className="text-sm mt-1">
+                  {selectedQuote.notes}
+                </p>
+
+              </div>
+            )}
+
+
+            {/* FOOTER */}
+
+            <div className="mt-12 pt-5 border-t text-center text-xs text-slate-500">
+
+              Merci pour votre confiance.
+
+              <br />
+
+              Votre ouvrage aluminium est fabriqué avec soin
+              par notre atelier.
+
+            </div>
+
+
+            {/* BUTTONS - tsy hivoaka amin'ny impression */}
+
+            <div className="flex justify-end gap-3 mt-8 print:hidden">
+
+              <button
+                onClick={() => setIsQuotePreviewOpen(false)}
+                className="
+                  no-print
+                  px-4
+                  py-2
+                  rounded-xl
+                  bg-slate-200
+                  text-slate-700
+                  text-xs
+                  font-bold
+                "
+              >
+                Fermer
+              </button>
+
+              <button
+                onClick={() => handlePrintQuote(selectedQuote)}
+                className="
+                  no-print
+                  flex
+                  items-center
+                  gap-2
+                  px-4
+                  py-2
+                  rounded-xl
+                  bg-blue-600
+                  text-white
+                  text-xs
+                  font-bold
+                "
+              >
+                <Printer className="w-4 h-4" />
+                Imprimer
+              </button>
+
+              <button
+                onClick={() => handleDownloadQuote(selectedQuote)}
+                className="
+                  no-print
+                  flex
+                  items-center
+                  gap-2
+                  px-4
+                  py-2
+                  rounded-xl
+                  bg-emerald-600
+                  text-white
+                  text-xs
+                  font-bold
+                "
+              >
+                <FileText className="w-4 h-4" />
+                Télécharger PDF
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
       )}
     </div>
