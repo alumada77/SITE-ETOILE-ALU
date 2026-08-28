@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 
 export default function MailList({
   folder,
@@ -7,33 +7,23 @@ export default function MailList({
   folder: string;
   onSelectMail: (mail: any) => void;
 }) {
-
   const [mails, setMails] = useState<any[]>([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-
-    // TEMPORAIRE
-    loadMails();
-
+    // Gmail désactivé temporairement.
+    setMails([]);
   }, [folder]);
-
-  const loadMails = async () => {
-    const mails = await getGmailMessages(folder);
-    setMails(mails);
-  };
 
   const filtered = mails.filter((mail) =>
     `${mail.subject} ${mail.from?.email}`
       .toLowerCase()
-      .includes(search.toLowerCase())
+      .includes(search.toLowerCase()),
   );
 
   return (
     <section className="w-[380px] shrink-0 border-r border-slate-200 dark:border-slate-800">
-
       <div className="p-4 border-b">
-
         <div className="relative">
           <input
             value={search}
@@ -42,19 +32,14 @@ export default function MailList({
             className="w-full rounded-xl bg-slate-100 px-4 py-3 text-sm outline-none"
           />
         </div>
-
       </div>
 
       <div className="overflow-y-auto h-full">
-
         {filtered.length === 0 ? (
-
           <div className="p-10 text-center text-slate-400">
             Aucun message
           </div>
-
         ) : (
-
           filtered.map((mail) => (
             <button
               key={mail.id}
@@ -77,11 +62,8 @@ export default function MailList({
               </div>
             </button>
           ))
-
         )}
-
       </div>
-
     </section>
   );
 }
