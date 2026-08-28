@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Send
 } from 'lucide-react';
+import { numberToFrenchWords } from "../../utils/numberToFrenchWords";
 import { useData, generateTrackingNumber } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Quote, OrderItem, QuoteStatus } from '../../types';
@@ -22,6 +23,7 @@ import { formatCurrency, formatDate, generateQuoteNumber } from '../../utils/for
 import { Toast, ToastType } from '../../components/ui/Toast';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { PrintableQuote } from "../../components/invoice/PrintableQuote";
+import logo1 from "../../img/logo1.png";
 
 export const Quotes: React.FC = () => {
   const { quotes, customers, products, addQuote, updateQuote, updateQuoteStatus, deleteQuote, addOrder, settings } = useData();
@@ -256,9 +258,10 @@ export const Quotes: React.FC = () => {
       setDeleteTargetId(null);
     }
   };
-
+  
   const handlePrintQuote = (quote: Quote) => {
     setSelectedQuote(quote);
+    setIsQuotePreviewOpen(true);
 
     setTimeout(() => {
       const element = document.getElementById("printable-quote");
@@ -281,14 +284,145 @@ export const Quotes: React.FC = () => {
         return;
       }
 
+      // ============================================================
+      // CLONE DU PREVIEW
+      // ============================================================
+
+      const clone = element.cloneNode(true) as HTMLElement;
+
+      // Supprimer les boutons
+      clone.querySelectorAll("button").forEach((button) => {
+        button.remove();
+      });
+
+      // Supprimer les éléments destinés uniquement à l'interface
+      clone.querySelectorAll(".no-print").forEach((el) => {
+        el.remove();
+      });
+
+      // ============================================================
+      // COPIER LES STYLES REELS DU PREVIEW
+      // ============================================================
+
+      const originalElements = [
+        element,
+        ...Array.from(element.querySelectorAll("*")),
+      ];
+
+      const clonedElements = [
+        clone,
+        ...Array.from(clone.querySelectorAll("*")),
+      ];
+
+      originalElements.forEach((original, index) => {
+        const cloned = clonedElements[index] as HTMLElement;
+
+        if (!cloned || !(original instanceof HTMLElement)) return;
+
+        const computed = window.getComputedStyle(original);
+
+        // Copier les propriétés importantes
+        cloned.style.fontFamily = computed.fontFamily;
+        cloned.style.fontSize = computed.fontSize;
+        cloned.style.fontWeight = computed.fontWeight;
+        cloned.style.lineHeight = computed.lineHeight;
+        cloned.style.letterSpacing = computed.letterSpacing;
+        cloned.style.textAlign = computed.textAlign;
+
+        cloned.style.color = computed.color;
+        cloned.style.backgroundColor = computed.backgroundColor;
+
+        cloned.style.borderTop = computed.borderTop;
+        cloned.style.borderRight = computed.borderRight;
+        cloned.style.borderBottom = computed.borderBottom;
+        cloned.style.borderLeft = computed.borderLeft;
+
+        cloned.style.borderRadius = computed.borderRadius;
+
+        cloned.style.paddingTop = computed.paddingTop;
+        cloned.style.paddingRight = computed.paddingRight;
+        cloned.style.paddingBottom = computed.paddingBottom;
+        cloned.style.paddingLeft = computed.paddingLeft;
+
+        cloned.style.marginTop = computed.marginTop;
+        cloned.style.marginRight = computed.marginRight;
+        cloned.style.marginBottom = computed.marginBottom;
+        cloned.style.marginLeft = computed.marginLeft;
+
+        cloned.style.width = computed.width;
+        cloned.style.height = computed.height;
+
+        cloned.style.display = computed.display;
+        cloned.style.flexDirection = computed.flexDirection;
+        cloned.style.justifyContent = computed.justifyContent;
+        cloned.style.alignItems = computed.alignItems;
+        cloned.style.gap = computed.gap;
+
+        cloned.style.position = computed.position;
+
+        // Ombres
+        cloned.style.boxShadow = computed.boxShadow;
+
+        // Opacité
+        cloned.style.opacity = computed.opacity;
+      });
+
+      // ============================================================
+      // CONVERSION DES COULEURS
+      // ============================================================
+      // getComputedStyle retourne normalement rgb/rgba,
+      // ka tsy tokony hisy oklch intsony eto.
+
+      clonedElements.forEach((el) => {
+        if (!(el instanceof HTMLElement)) return;
+
+        const computed = window.getComputedStyle(el);
+
+        if (computed.color.includes("oklch")) {
+          el.style.color = "#0f172a";
+        }
+
+        if (computed.backgroundColor.includes("oklch")) {
+          el.style.backgroundColor = "#ffffff";
+        }
+
+        if (computed.borderTopColor.includes("oklch")) {
+          el.style.borderTopColor = "#e2e8f0";
+        }
+
+        if (computed.borderRightColor.includes("oklch")) {
+          el.style.borderRightColor = "#e2e8f0";
+        }
+
+        if (computed.borderBottomColor.includes("oklch")) {
+          el.style.borderBottomColor = "#e2e8f0";
+        }
+
+        if (computed.borderLeftColor.includes("oklch")) {
+          el.style.borderLeftColor = "#e2e8f0";
+        }
+      });
+
+      // ============================================================
+      // STYLE PAGE IMPRESSION
+      // ============================================================
+
+      printWindow.document.open();
+
       printWindow.document.write(`
         <!DOCTYPE html>
         <html lang="fr">
+
           <head>
+
             <meta charset="UTF-8" />
-            <title>Proforma ${quote.quoteNumber}</title>
+
+            <title>
+              Proforma ${quote.quoteNumber}
+            </title>
 
             <style>
+
               @page {
                 size: A4 landscape;
                 margin: 5mm;
@@ -302,8 +436,11 @@ export const Quotes: React.FC = () => {
               body {
                 margin: 0;
                 padding: 0;
-                background: #ffffff !important;
+                width: 100%;
+                min-height: 100%;
+                background: #ffffff;
                 font-family: Arial, Helvetica, sans-serif;
+
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
@@ -317,48 +454,125 @@ export const Quotes: React.FC = () => {
               #printable-quote {
                 width: 287mm !important;
                 min-height: 200mm !important;
-                background: #ffffff !important;
-                color: #0f172a !important;
-                overflow: hidden;
-              }
 
-              button {
-                display: none !important;
+                background: #ffffff;
+
+                color: #0f172a;
+
+                overflow: hidden;
+
+                margin: 0 auto;
               }
 
               img {
                 max-width: 100%;
+                print-color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
               }
 
               table {
                 width: 100%;
                 border-collapse: collapse;
               }
+
+              button,
+              .no-print {
+                display: none !important;
+              }
+
+              @media print {
+
+                html,
+                body {
+                  width: 287mm;
+                  min-height: 200mm;
+                  margin: 0;
+                  padding: 0;
+                }
+
+                #printable-quote {
+                  width: 287mm !important;
+                  min-height: 200mm !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+
+              }
+
             </style>
+
           </head>
 
           <body>
-            ${element.outerHTML}
+
+            ${clone.outerHTML}
+
           </body>
+
         </html>
       `);
 
       printWindow.document.close();
 
-      setTimeout(() => {
+      // ============================================================
+      // ATTENDRE LE CHARGEMENT DES IMAGES
+      // ============================================================
+
+      const images = printWindow.document.images;
+
+      let loadedImages = 0;
+
+      const printWhenReady = () => {
         printWindow.focus();
         printWindow.print();
 
         setTimeout(() => {
           printWindow.close();
-        }, 500);
-      }, 700);
-    }, 300);
+        }, 800);
+      };
+
+      if (images.length === 0) {
+        setTimeout(printWhenReady, 500);
+      } else {
+        Array.from(images).forEach((img) => {
+
+          if (img.complete) {
+            loadedImages++;
+
+            if (loadedImages === images.length) {
+              setTimeout(printWhenReady, 300);
+            }
+
+          } else {
+
+            img.onload = () => {
+              loadedImages++;
+
+              if (loadedImages === images.length) {
+                setTimeout(printWhenReady, 300);
+              }
+            };
+
+            img.onerror = () => {
+              loadedImages++;
+
+              if (loadedImages === images.length) {
+                setTimeout(printWhenReady, 300);
+              }
+            };
+
+          }
+
+        });
+      }
+
+    }, 400);
   };
 
 
   const handleDownloadQuote = async (quote: Quote) => {
     setSelectedQuote(quote);
+    setIsQuotePreviewOpen(true);
 
     setTimeout(async () => {
       const element = document.getElementById("printable-quote");
@@ -449,6 +663,7 @@ export const Quotes: React.FC = () => {
       }
     }, 300);
   };
+  
 
   const filteredQuotes = quotes.filter(q =>
     q.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -993,17 +1208,35 @@ export const Quotes: React.FC = () => {
 
             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
 
-              <div>
-                <h1 className="text-2xl font-black uppercase">
-                  {settings.companyName}
-                </h1>
+              <div className="flex items-center gap-4">
+                <img
+                  src={logo1}
+                  alt={settings.companyName}
+                  className="w-16 h-16 object-contain"
+                />
 
-                <p className="text-xs text-slate-500 mt-1">
-                  Aluminium • Inox • Vitrerie
-                </p>
+                <div>
+                  <h1 className="text-2xl font-black uppercase text-slate-900">
+                    {settings.companyName}
+                  </h1>
+
+                  <p className="text-xs text-slate-500 mt-1">
+                    Aluminium • Inox • Vitrerie
+                  </p>
+
+                  {settings.phone && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Tél : {settings.phone}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="text-right">
+
+                <p className="text-xs font-black uppercase tracking-[2px] text-slate-400 mb-1">
+                  FACTURE PROFORMA
+                </p>
 
                 <h2 className="text-3xl font-black text-amber-600">
                   DEVIS
@@ -1012,6 +1245,7 @@ export const Quotes: React.FC = () => {
                 <p className="text-sm font-bold mt-1">
                   N° {selectedQuote.quoteNumber}
                 </p>
+
 
                 <p className="text-xs text-slate-500">
                   Date : {formatDate(selectedQuote.createdAt)}
@@ -1205,6 +1439,12 @@ export const Quotes: React.FC = () => {
 
                 </div>
 
+                <div className="flex justify-between border-t-2 border-slate-900 pt-3 text-lg">
+
+                  <span className="text-[10px] font-semibold uppercase text-slate-500 block mt-1"> {numberToFrenchWords( Math.round(selectedQuote.total) )} ARIARY </span>
+
+                </div>
+
               </div>
 
             </div>
@@ -1259,46 +1499,6 @@ export const Quotes: React.FC = () => {
                 "
               >
                 Fermer
-              </button>
-
-              <button
-                onClick={() => handlePrintQuote(selectedQuote)}
-                className="
-                  no-print
-                  flex
-                  items-center
-                  gap-2
-                  px-4
-                  py-2
-                  rounded-xl
-                  bg-blue-600
-                  text-white
-                  text-xs
-                  font-bold
-                "
-              >
-                <Printer className="w-4 h-4" />
-                Imprimer
-              </button>
-
-              <button
-                onClick={() => handleDownloadQuote(selectedQuote)}
-                className="
-                  no-print
-                  flex
-                  items-center
-                  gap-2
-                  px-4
-                  py-2
-                  rounded-xl
-                  bg-emerald-600
-                  text-white
-                  text-xs
-                  font-bold
-                "
-              >
-                <FileText className="w-4 h-4" />
-                Télécharger PDF
               </button>
 
             </div>

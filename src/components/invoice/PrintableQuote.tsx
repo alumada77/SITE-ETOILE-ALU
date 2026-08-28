@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Quote, AppSettings } from "../../types";
+
 import {
   formatCurrency,
   formatDate,
@@ -44,7 +46,10 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
   const handlePrint = async () => {
     const element = document.getElementById("printable-quote");
 
-    if (!element) return;
+    if (!element) {
+      console.error("PrintableQuote introuvable");
+      return;
+    }
 
     try {
       const canvas = await html2canvas(element, {
@@ -52,6 +57,7 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
+        logging: false,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -78,7 +84,7 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
       const pdfBlob = pdf.output("blob");
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      const printWindow = window.open(pdfUrl);
+      const printWindow = window.open(pdfUrl, "_blank");
 
       if (!printWindow) {
         URL.revokeObjectURL(pdfUrl);
@@ -105,7 +111,10 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
   const handleDownloadPDF = async () => {
     const element = document.getElementById("printable-quote");
 
-    if (!element) return;
+    if (!element) {
+      console.error("PrintableQuote introuvable");
+      return;
+    }
 
     try {
       const canvas = await html2canvas(element, {
@@ -113,6 +122,7 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
+        logging: false,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -170,7 +180,8 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
   const QuoteContent = () => {
     return (
-      <div id="printable-quote" className="text-[7px] leading-tight scale-[0.92] origin-top">
+      <div className="text-[7px] leading-tight scale-[0.92] origin-top">
+
         {/* ======================================================
             HEADER
         ====================================================== */}
@@ -181,9 +192,9 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           <div className="flex items-start gap-4">
 
-            {settings.logo ? (
+            {settings.logo || logo1 ? (
               <img
-                src={logo1 || settings.logo}
+                src={settings.logo || logo1}
                 alt={settings.companyName}
                 className="
                   w-10
@@ -220,9 +231,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
                 {settings.companyName}
               </h1>
 
-              <p className="text-xs font-medium text-amber-600">
-                {settings.tagline}
-              </p>
+              {settings.tagline && (
+                <p className="text-xs font-medium text-amber-600">
+                  {settings.tagline}
+                </p>
+              )}
 
               <div className="mt-2 text-xs text-slate-500 space-y-0.5">
 
@@ -244,15 +257,23 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
                   <p className="flex items-center gap-1.5">
                     <MapPin className="w-3 h-3 text-slate-400" />
                     {settings.address}
-                    {settings.city ? `, ${settings.city}` : ""}
+                    {settings.city
+                      ? `, ${settings.city}`
+                      : ""}
                   </p>
                 )}
 
                 {(settings.nif || settings.stat) && (
                   <p className="font-mono text-[10px] text-slate-400">
-                    {settings.nif && `NIF: ${settings.nif}`}
-                    {settings.nif && settings.stat && " | "}
-                    {settings.stat && `STAT: ${settings.stat}`}
+                    {settings.nif &&
+                      `NIF: ${settings.nif}`}
+
+                    {settings.nif &&
+                      settings.stat &&
+                      " | "}
+
+                    {settings.stat &&
+                      `STAT: ${settings.stat}`}
                   </p>
                 )}
 
@@ -262,25 +283,48 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           </div>
 
-
           {/* QUOTE NUMBER */}
 
-          <div className="text-right sm:text-right">
+          <div className="text-right">
 
-            <div className="inline-block bg-slate-100 text-slate-800 px-4 py-2 rounded-xl text-right">
+            <div className="
+              inline-block
+              bg-slate-100
+              text-slate-800
+              px-4
+              py-2
+              rounded-xl
+              text-right
+            ">
 
-              <span className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block">
+              <span className="
+                text-[10px]
+                uppercase
+                font-extrabold
+                tracking-wider
+                text-slate-400
+                block
+              ">
                 DEVIS / PROFORMA
               </span>
 
-              <span className="text-xl font-black font-mono text-slate-900">
+              <span className="
+                text-xl
+                font-black
+                font-mono
+                text-slate-900
+              ">
                 {quote.quoteNumber}
               </span>
 
             </div>
 
-
-            <div className="mt-3 text-xs text-slate-500 space-y-1">
+            <div className="
+              mt-3
+              text-xs
+              text-slate-500
+              space-y-1
+            ">
 
               <p>
                 <span className="font-semibold text-slate-700">
@@ -334,35 +378,73 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
         </div>
 
-
         {/* ======================================================
             CLIENT
         ====================================================== */}
 
-        <div className="my-2 bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <div className="
+          my-2
+          bg-slate-50
+          p-2
+          rounded-lg
+          border
+          border-slate-200/80
+        ">
 
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+          <h2 className="
+            text-xs
+            font-bold
+            uppercase
+            tracking-wider
+            text-slate-400
+            mb-2
+          ">
             PROPOSITION DESTINÉE À
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="
+            grid
+            grid-cols-1
+            sm:grid-cols-2
+            gap-4
+          ">
 
             <div>
 
-              <p className="text-base font-bold text-slate-900">
+              <p className="
+                text-base
+                font-bold
+                text-slate-900
+              ">
                 {quote.customerName}
               </p>
 
               {quote.customerPhone && (
-                <p className="text-xs text-slate-600 mt-1">
-                  <Phone className="w-3 h-3 inline mr-1 text-slate-400" />
+                <p className="
+                  text-xs
+                  text-slate-600
+                  mt-1
+                ">
+                  <Phone className="
+                    w-3
+                    h-3
+                    inline
+                    mr-1
+                    text-slate-400
+                  " />
                   {quote.customerPhone}
                 </p>
               )}
 
               {quote.customerEmail && (
                 <p className="text-xs text-slate-600">
-                  <Mail className="w-3 h-3 inline mr-1 text-slate-400" />
+                  <Mail className="
+                    w-3
+                    h-3
+                    inline
+                    mr-1
+                    text-slate-400
+                  " />
                   {quote.customerEmail}
                 </p>
               )}
@@ -373,7 +455,13 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
               {quote.customerAddress && (
                 <p className="text-xs text-slate-600">
-                  <MapPin className="w-3 h-3 inline mr-1 text-slate-400" />
+                  <MapPin className="
+                    w-3
+                    h-3
+                    inline
+                    mr-1
+                    text-slate-400
+                  " />
                   {quote.customerAddress}
                 </p>
               )}
@@ -383,7 +471,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
           </div>
 
         </div>
-
 
         {/* ======================================================
             PRODUCTS TABLE
@@ -395,7 +482,14 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             <thead>
 
-              <tr className="border-b-2 border-slate-900 text-slate-900 uppercase font-black tracking-wider">
+              <tr className="
+                border-b-2
+                border-slate-900
+                text-slate-900
+                uppercase
+                font-black
+                tracking-wider
+              ">
 
                 <th className="py-1 px-1">
                   Désignation
@@ -421,32 +515,44 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </thead>
 
-
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="
+              divide-y
+              divide-slate-100
+            ">
 
               {quote.products.map((item, idx) => (
 
-                <tr
-                  key={idx}
-                  className="hover:bg-slate-50/50"
-                >
+                <tr key={idx}>
 
-                  <td className="py-1 px-1 align-top">
+                  <td className="
+                    py-1
+                    px-1
+                    align-top
+                  ">
 
-                    <p className="font-bold text-slate-900">
+                    <p className="
+                      font-bold
+                      text-slate-900
+                    ">
                       {item.productName}
                     </p>
 
-
                     {item.description && (
-                      <p className="mt-1 text-[10px] text-slate-500 italic">
+                      <p className="
+                        mt-1
+                        text-[10px]
+                        text-slate-500
+                        italic
+                      ">
                         {item.description}
                       </p>
                     )}
 
-
                     {item.color && (
-                      <p className="text-[10px] text-slate-500">
+                      <p className="
+                        text-[10px]
+                        text-slate-500
+                      ">
                         <span className="font-semibold">
                           Couleur :
                         </span>{" "}
@@ -454,9 +560,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
                       </p>
                     )}
 
-
                     {item.dimension && (
-                      <p className="text-[10px] text-slate-500">
+                      <p className="
+                        text-[10px]
+                        text-slate-500
+                      ">
                         <span className="font-semibold">
                           Dimension :
                         </span>{" "}
@@ -464,40 +572,44 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
                       </p>
                     )}
 
-
                     {item.selectedOptions &&
                       item.selectedOptions.length > 0 && (
 
-                        <div className="mt-1 space-y-1">
+                        <div className="
+                          mt-1
+                          space-y-1
+                        ">
 
-                          {item.selectedOptions.map((option) => (
+                          {item.selectedOptions.map(
+                            (option) => (
 
-                            <p
-                              key={option.id}
-                              className="
-                                text-[10px]
-                                text-amber-600
-                                font-medium
-                              "
-                            >
+                              <p
+                                key={option.id}
+                                className="
+                                  text-[10px]
+                                  text-amber-600
+                                  font-medium
+                                "
+                              >
 
-                              ✓ {option.name}
+                                ✓ {option.name}
 
-                              {option.price > 0 && (
-                                <>
-                                  {" "}
-                                  (+
-                                  {formatCurrency(
-                                    option.price,
-                                    settings.currency
-                                  )}
-                                  )
-                                </>
-                              )}
+                                {option.price > 0 && (
+                                  <>
+                                    {" "}
+                                    (+
+                                    {formatCurrency(
+                                      option.price,
+                                      settings.currency
+                                    )}
+                                    )
+                                  </>
+                                )}
 
-                            </p>
+                              </p>
 
-                          ))}
+                            )
+                          )}
 
                         </div>
 
@@ -505,26 +617,47 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
                   </td>
 
-
-                  <td className="py-1 px-1 text-center text-slate-500 font-mono">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    text-slate-500
+                    font-mono
+                  ">
                     {item.unit}
                   </td>
 
-
-                  <td className="py-1 px-1 text-center font-bold text-slate-800">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    font-bold
+                    text-slate-800
+                  ">
                     {item.quantity}
                   </td>
 
-
-                  <td className="py-1 px-1 text-right font-mono text-slate-600">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-mono
+                    text-slate-600
+                  ">
                     {formatCurrency(
                       item.unitPrice,
                       settings.currency
                     )}
                   </td>
 
-
-                  <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-bold
+                    font-mono
+                    text-slate-900
+                  ">
                     {formatCurrency(
                       item.totalPrice,
                       settings.currency
@@ -535,33 +668,62 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
               ))}
 
-
               {/* MAIN D'OEUVRE */}
 
               {quote.laborFee > 0 && (
 
                 <tr>
 
-                  <td className="py-1 px-1 font-medium text-slate-900">
+                  <td className="
+                    py-1
+                    px-1
+                    font-medium
+                    text-slate-900
+                  ">
                     Main d'œuvre, Pose & Assemblage
                   </td>
 
-                  <td className="py-1 px-1 text-center text-slate-500 font-mono">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    text-slate-500
+                    font-mono
+                  ">
                     Forfait
                   </td>
 
-                  <td className="py-1 px-1 text-center font-bold text-slate-800">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    font-bold
+                    text-slate-800
+                  ">
                     1
                   </td>
 
-                  <td className="py-1 px-1 text-right font-mono text-slate-600">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-mono
+                    text-slate-600
+                  ">
                     {formatCurrency(
                       quote.laborFee,
                       settings.currency
                     )}
                   </td>
 
-                  <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-bold
+                    font-mono
+                    text-slate-900
+                  ">
                     {formatCurrency(
                       quote.laborFee,
                       settings.currency
@@ -572,33 +734,62 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
               )}
 
-
               {/* TRANSPORT */}
 
               {quote.transportFee > 0 && (
 
                 <tr>
 
-                  <td className="py-1 px-1 font-medium text-slate-900">
+                  <td className="
+                    py-1
+                    px-1
+                    font-medium
+                    text-slate-900
+                  ">
                     Transport & Livraison Chantier
                   </td>
 
-                  <td className="py-1 px-1 text-center text-slate-500 font-mono">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    text-slate-500
+                    font-mono
+                  ">
                     Trajet
                   </td>
 
-                  <td className="py-1 px-1 text-center font-bold text-slate-800">
+                  <td className="
+                    py-1
+                    px-1
+                    text-center
+                    font-bold
+                    text-slate-800
+                  ">
                     1
                   </td>
 
-                  <td className="py-1 px-1 text-right font-mono text-slate-600">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-mono
+                    text-slate-600
+                  ">
                     {formatCurrency(
                       quote.transportFee,
                       settings.currency
                     )}
                   </td>
 
-                  <td className="py-1 px-1 text-right font-bold font-mono text-slate-900">
+                  <td className="
+                    py-1
+                    px-1
+                    text-right
+                    font-bold
+                    font-mono
+                    text-slate-900
+                  ">
                     {formatCurrency(
                       quote.transportFee,
                       settings.currency
@@ -615,12 +806,21 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
         </div>
 
-
         {/* ======================================================
             TOTALS
         ====================================================== */}
 
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-2 pt-2 border-t border-slate-200">
+        <div className="
+          flex
+          flex-col
+          sm:flex-row
+          justify-between
+          items-start
+          gap-2
+          pt-2
+          border-t
+          border-slate-200
+        ">
 
           {/* QR + BARCODE */}
 
@@ -643,7 +843,13 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             <div>
 
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <p className="
+                text-[10px]
+                font-bold
+                text-slate-400
+                uppercase
+                tracking-wider
+              ">
                 CODE DEVIS
               </p>
 
@@ -661,11 +867,20 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
               </div>
 
-              <p className="font-mono text-[10px] text-slate-500 mt-1">
+              <p className="
+                font-mono
+                text-[10px]
+                text-slate-500
+                mt-1
+              ">
                 {quote.quoteNumber}
               </p>
 
-              <p className="text-[10px] text-slate-400 mt-2">
+              <p className="
+                text-[10px]
+                text-slate-400
+                mt-2
+              ">
                 Scannez pour identifier le devis
               </p>
 
@@ -673,18 +888,30 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           </div>
 
-
           {/* CALCULATIONS */}
 
-          <div className="w-full sm:w-80 space-y-2 text-xs">
+          <div className="
+            w-full
+            sm:w-80
+            space-y-2
+            text-xs
+          ">
 
-            <div className="flex justify-between text-slate-600 py-1">
+            <div className="
+              flex
+              justify-between
+              text-slate-600
+              py-1
+            ">
 
               <span>
                 Sous-total HT :
               </span>
 
-              <span className="font-mono font-semibold">
+              <span className="
+                font-mono
+                font-semibold
+              ">
                 {formatCurrency(
                   quote.subtotal +
                     (quote.laborFee || 0) +
@@ -695,16 +922,23 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </div>
 
-
             {quote.discount > 0 && (
 
-              <div className="flex justify-between text-rose-600 py-1">
+              <div className="
+                flex
+                justify-between
+                text-rose-600
+                py-1
+              ">
 
                 <span>
                   Remise accordée :
                 </span>
 
-                <span className="font-mono font-semibold">
+                <span className="
+                  font-mono
+                  font-semibold
+                ">
                   -
                   {formatCurrency(
                     quote.discount,
@@ -716,16 +950,23 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             )}
 
-
             {quote.taxAmount > 0 && (
 
-              <div className="flex justify-between text-slate-600 py-1">
+              <div className="
+                flex
+                justify-between
+                text-slate-600
+                py-1
+              ">
 
                 <span>
                   TVA ({quote.taxRate}%) :
                 </span>
 
-                <span className="font-mono font-semibold">
+                <span className="
+                  font-mono
+                  font-semibold
+                ">
                   {formatCurrency(
                     quote.taxAmount,
                     settings.currency
@@ -735,7 +976,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
               </div>
 
             )}
-
 
             {/* TOTAL */}
 
@@ -756,7 +996,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
                 TOTAL TTC :
               </span>
 
-              <span className="font-mono text-base text-amber-400">
+              <span className="
+                font-mono
+                text-base
+                text-amber-400
+              ">
                 {formatCurrency(
                   quote.total,
                   settings.currency
@@ -768,7 +1012,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
           </div>
 
         </div>
-
 
         {/* ======================================================
             AMOUNT IN WORDS
@@ -807,7 +1050,10 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             {amountInWords} ARIARY
 
-            <span className="font-normal normal-case">
+            <span className="
+              font-normal
+              normal-case
+            ">
               {" "}
               (
               {formatCurrency(
@@ -820,7 +1066,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
           </p>
 
         </div>
-
 
         {/* ======================================================
             NOTES
@@ -861,7 +1106,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
         )}
 
-
         {/* ======================================================
             SIGNATURES
         ====================================================== */}
@@ -882,11 +1126,18 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           <div>
 
-            <p className="font-bold text-slate-700">
+            <p className="
+              font-bold
+              text-slate-700
+            ">
               Signature Client
             </p>
 
-            <p className="text-[10px] text-slate-400 mt-1">
+            <p className="
+              text-[10px]
+              text-slate-400
+              mt-1
+            ">
               Mention « Bon pour accord »
             </p>
 
@@ -896,20 +1147,26 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
               border-dashed
               border-slate-300
               mt-4
-            " />
+            />
 
           </div>
-
 
           {/* DIRECTION */}
 
           <div>
 
-            <p className="font-bold text-slate-700">
+            <p className="
+              font-bold
+              text-slate-700
+            ">
               La Direction - {settings.companyName}
             </p>
 
-            <p className="text-[10px] text-slate-400 mt-1">
+            <p className="
+              text-[10px]
+              text-slate-400
+              mt-1
+            ">
               Cachet officiel et signature
             </p>
 
@@ -940,7 +1197,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
         </div>
 
-
         {/* ======================================================
             FOOTER
         ====================================================== */}
@@ -963,7 +1219,7 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
             tracking-wider
             text-slate-500
           ">
-            DEVIs ESTIMATIF / PROFORMA
+            DEVIS ESTIMATIF / PROFORMA
           </p>
 
           <p className="
@@ -973,7 +1229,10 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
             leading-relaxed
           ">
             Ce devis est valable jusqu'au{" "}
-            <span className="font-bold text-slate-700">
+            <span className="
+              font-bold
+              text-slate-700
+            ">
               {formatDate(quote.validUntil)}
             </span>
             . Les prix indiqués sont ceux convenus
@@ -995,7 +1254,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
       </div>
     );
   };
-
 
   // ============================================================
   // MAIN
@@ -1030,7 +1288,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
         max-h-[92vh]
       ">
 
-
         {/* ======================================================
             TOP CONTROL BAR
         ====================================================== */}
@@ -1048,7 +1305,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
           flex-shrink-0
         ">
 
-          <div className="flex items-center gap-2">
+          <div className="
+            flex
+            items-center
+            gap-2
+          ">
 
             <span className="
               bg-amber-500
@@ -1074,8 +1335,11 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
           </div>
 
-
-          <div className="flex items-center gap-3">
+          <div className="
+            flex
+            items-center
+            gap-3
+          ">
 
             {/* PRINT */}
 
@@ -1107,7 +1371,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </button>
 
-
             {/* DOWNLOAD */}
 
             <button
@@ -1136,7 +1399,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </button>
 
-
             {/* CLOSE */}
 
             {onClose && (
@@ -1164,7 +1426,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
         </div>
 
-
         {/* ======================================================
             PRINTABLE CONTENT
         ====================================================== */}
@@ -1177,6 +1438,7 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
             overflow-y-auto
             print:p-0
             print:overflow-visible
+            bg-white
           "
         >
 
@@ -1188,7 +1450,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
             print:w-[297mm]
             print:h-[210mm]
           ">
-
 
             {/* ==================================================
                 ORIGINAL
@@ -1217,7 +1478,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </div>
 
-
             {/* ==================================================
                 COPIE
             ================================================== */}
@@ -1242,7 +1502,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
 
             </div>
 
-
           </div>
 
         </div>
@@ -1252,3 +1511,6 @@ export const PrintableQuote: React.FC<PrintableQuoteProps> = ({
     </div>
   );
 };
+
+export default PrintableQuote;
+
